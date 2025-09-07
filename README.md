@@ -9,6 +9,6 @@ Chapitre 1
 - redundant display of the random state (toggle button + text "aléatoire")
 - white space around cards due to the cropping script not being perfect and maybe css
 
-- filter cards by color and filter out purple empty cards
+- filter cards by color (difficulty and/or time) and filter out purple empty cards
 - flicker on navigation from back: when advancing while a card is flipped, the next card briefly shows its back
 - add skeleton and improve loading speed
