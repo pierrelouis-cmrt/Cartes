@@ -11,3 +11,4 @@ Chapitre 1
 
 - filter cards by color and filter out purple empty cards
 - flicker on navigation from back: when advancing while a card is flipped, the next card briefly shows its back
+- add skeleton and improve loading speed
