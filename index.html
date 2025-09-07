@@ -17,7 +17,8 @@
         --accent: #111827;
         --btn: #111827;
         --btn-fg: #ffffff;
-        --radius: 52px;
+        /* Scale corner radius with container size, with sensible bounds */
+        --radius: clamp(6px, 8%, 52px);
         --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
         --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.16);
