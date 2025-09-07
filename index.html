@@ -4,6 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cartes mémoire physique</title>
+    <script
+      defer
+      src="https://cloud.umami.is/script.js"
+      data-website-id="a052a820-83ee-48c6-bf8a-9b3c2b3a8fd3"
+    ></script>
     <style>
       :root {
         --bg: #f7f7f9;
@@ -397,7 +402,9 @@
         } else {
           state.deck = newDeck;
           // If shuffle is enabled, start at a random index so the first card shown is random
-          state.i = state.shuffle ? Math.floor(Math.random() * newDeck.length) : 0;
+          state.i = state.shuffle
+            ? Math.floor(Math.random() * newDeck.length)
+            : 0;
         }
       }
 
