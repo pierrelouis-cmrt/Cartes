@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Flashcards Player</title>
+    <title>Cartes mémoire physique</title>
     <style>
       :root {
         --bg: #f7f7f9;
@@ -216,7 +216,7 @@
       }
 
       .switch.on {
-        background: #111827;
+        background: #e5e7eb;
       }
 
       .switch.on .knob {
@@ -269,14 +269,15 @@
   </head>
   <body>
     <header>
-      <h1>Flashcards Player</h1>
+      <h1>Cartes mémoire physique chapitre 1</h1>
       <div class="sub">
-        Click the card to flip. Use ← / → to navigate, space to flip.
+        Cliquez sur la carte pour la retourner. Utilisez ← / → pour naviguer,
+        barre d'espace pour retourner.
       </div>
     </header>
 
     <main class="wrap">
-      <section class="stage" id="stage" aria-label="Flashcard">
+      <section class="stage" id="stage" aria-label="Carte mémoire">
         <div class="card-shell" id="cardShell">
           <div
             class="card3d"
@@ -287,24 +288,26 @@
             aria-pressed="false"
           >
             <div class="face front">
-              <img id="frontImg" alt="Flashcard front" draggable="false" />
+              <img id="frontImg" alt="Recto de la carte" draggable="false" />
             </div>
             <div class="face back">
-              <img id="backImg" alt="Flashcard back" draggable="false" />
+              <img id="backImg" alt="Verso de la carte" draggable="false" />
             </div>
           </div>
         </div>
       </section>
 
       <div class="controls">
-        <button id="prevBtn" class="secondary" title="Previous (←)">
-          ← Back
+        <button id="prevBtn" class="secondary" title="Précédent (←)">
+          ← Précédent
         </button>
-        <button id="flipBtn" title="Flip (space)">Flip</button>
-        <button id="nextBtn" class="secondary" title="Next (→)">Next →</button>
+        <button id="flipBtn" title="Retourner (espace)">Retourner</button>
+        <button id="nextBtn" class="secondary" title="Suivant (→)">
+          Suivant →
+        </button>
 
-        <label class="toggle" title="Toggle random order">
-          <span>Random</span>
+        <label class="toggle" title="Activer/désactiver l'ordre aléatoire">
+          <span>Aléatoire</span>
           <span
             class="switch"
             id="shuffleSwitch"
@@ -316,14 +319,10 @@
           </span>
         </label>
       </div>
-      <div class="meta" id="counter">Loading…</div>
+      <div class="meta" id="counter">Chargement…</div>
     </main>
 
-    <footer>
-      Tips: images should be named
-      <code>front1.png, back1.png, front2.png, back2.png, …</code> in the folder
-      below.
-    </footer>
+    <footer></footer>
 
     <script>
       /* ==========================
@@ -391,25 +390,26 @@
         const { total } = state;
         let newDeck = Array.from({ length: total }, (_, i) => i + 1);
         if (state.shuffle) shuffleInPlace(newDeck);
-        if (keepCardNo) {
+        if (keepCardNo != null) {
           const idx = newDeck.indexOf(keepCardNo);
           state.deck = newDeck;
           state.i = Math.max(0, idx);
         } else {
           state.deck = newDeck;
-          state.i = 0;
+          // If shuffle is enabled, start at a random index so the first card shown is random
+          state.i = state.shuffle ? Math.floor(Math.random() * newDeck.length) : 0;
         }
       }
 
       function updateCounter() {
         const el = qs("#counter");
         if (!state.total) {
-          el.textContent = "No images found.";
+          el.textContent = "Aucune image trouvée.";
           return;
         }
         const n = state.deck[state.i];
-        el.textContent = `Card ${n} of ${state.total} ${
-          state.shuffle ? "(random)" : ""
+        el.textContent = `Carte ${n} sur ${state.total} ${
+          state.shuffle ? "(aléatoire)" : ""
         }`;
       }
 
@@ -551,7 +551,7 @@
         if (!total) {
           qs(
             "#counter"
-          ).textContent = `No card images found in "${BASE_PATH}". Place files named front1.png, back1.png, … and reload.`;
+          ).textContent = `Aucune image de carte trouvée dans "${BASE_PATH}". Placez des fichiers nommés front1.png, back1.png, … puis rechargez.`;
           return;
         }
         rebuildDeck();
