@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flashcards Player</title>
+    <style>
+      :root {
+        --bg: #f7f7f9;
+        --fg: #0f172a;
+        --muted: #6b7280;
+        --accent: #111827;
+        --btn: #111827;
+        --btn-fg: #ffffff;
+        --radius: 52px;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
+        --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.16);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        display: grid;
+        min-height: 100dvh;
+        grid-template-rows: auto 1fr auto;
+      }
+      header {
+        padding: 22px 20px 10px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+        letter-spacing: 0.2px;
+      }
+      .sub {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 10px 16px 22px;
+        width: 100%;
+      }
+
+      /* Stage */
+      .stage {
+        position: relative;
+        margin: 10px auto 18px;
+        width: min(92vw, 1000px);
+        perspective: 2000px;
+        -webkit-perspective: 2000px;
+        user-select: none;
+        display: block;
+      }
+
+      /* Shell holds the 3D space */
+      .card-shell {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        transition: transform 0.15s ease-out;
+      }
+
+      .card-shell:hover {
+        transform: translateY(-2px);
+      }
+
+      .card-shell:active {
+        transform: translateY(0px) scale(0.98);
+      }
+
+      /* Inner flipper with smooth animation */
+      .card3d {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+        -webkit-transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: rotateY(0deg);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .card3d.flipping {
+        box-shadow: var(--shadow-active);
+      }
+
+      .card3d.flipped {
+        transform: rotateY(180deg);
+      }
+
+      .face {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: var(--radius);
+        overflow: hidden;
+        background: #ffffff;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      .face.front {
+        transform: rotateY(0deg);
+      }
+
+      .face.back {
+        transform: rotateY(180deg);
+      }
+
+      .face img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #ffffff;
+        pointer-events: none;
+        opacity: 0;
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* Controls with smooth transitions */
+      .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      button,
+      .toggle {
+        appearance: none;
+        border: 0;
+        background: var(--btn);
+        color: var(--btn-fg);
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(0);
+      }
+
+      button:hover:not(:disabled),
+      .toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      button:active:not(:disabled),
+      .toggle:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+      }
+
+      .switch {
+        width: 42px;
+        height: 26px;
+        background: #e5e7eb;
+        border-radius: 999px;
+        position: relative;
+        transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 999px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+
+      .switch.on {
+        background: #111827;
+      }
+
+      .switch.on .knob {
+        left: 19px;
+      }
+
+      .meta {
+        margin-top: 6px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+        transition: opacity 0.2s ease;
+      }
+
+      footer {
+        padding: 14px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .sr-only {
+        position: absolute;
+        left: -9999px;
+      }
+
+      /* Loading state */
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .loading {
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Flashcards Player</h1>
+      <div class="sub">
+        Click the card to flip. Use ← / → to navigate, space to flip.
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="stage" id="stage" aria-label="Flashcard">
+        <div class="card-shell" id="cardShell">
+          <div
+            class="card3d"
+            id="card3d"
+            aria-live="polite"
+            tabindex="0"
+            role="button"
+            aria-pressed="false"
+          >
+            <div class="face front">
+              <img id="frontImg" alt="Flashcard front" draggable="false" />
+            </div>
+            <div class="face back">
+              <img id="backImg" alt="Flashcard back" draggable="false" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="controls">
+        <button id="prevBtn" class="secondary" title="Previous (←)">
+          ← Back
+        </button>
+        <button id="flipBtn" title="Flip (space)">Flip</button>
+        <button id="nextBtn" class="secondary" title="Next (→)">Next →</button>
+
+        <label class="toggle" title="Toggle random order">
+          <span>Random</span>
+          <span
+            class="switch"
+            id="shuffleSwitch"
+            role="switch"
+            aria-checked="false"
+            tabindex="0"
+          >
+            <span class="knob"></span>
+          </span>
+        </label>
+      </div>
+      <div class="meta" id="counter">Loading…</div>
+    </main>
+
+    <footer>
+      Tips: images should be named
+      <code>front1.png, back1.png, front2.png, back2.png, …</code> in the folder
+      below.
+    </footer>
+
+    <script>
+      /* ==========================
+       Configuration
+       ========================== */
+      const BASE_PATH = "cropped_cards";
+      const MAX_PROBE = 10000;
+
+      /* ===== Helpers ===== */
+      const qs = (s, el = document) => el.querySelector(s);
+
+      function preloadImage(url) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () =>
+            resolve({
+              ok: true,
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+            });
+          img.onerror = () => resolve({ ok: false });
+          // cache-bust only when probing/preloading to force existence checks
+          img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
+        });
+      }
+
+      const frontURL = (n) => `${BASE_PATH}/front${n}.png`;
+      const backURL = (n) => `${BASE_PATH}/back${n}.png`;
+
+      function shuffleInPlace(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      const state = {
+        total: 0,
+        deck: [],
+        i: 0,
+        flipped: false,
+        shuffle: JSON.parse(localStorage.getItem("fc_shuffle") || "false"),
+        sizes: {}, // { [n]: { w, h } } (based on front image)
+      };
+
+      async function discoverPairs() {
+        let n = 0;
+        for (let k = 1; k <= MAX_PROBE; k++) {
+          const [pf, pb] = await Promise.all([
+            preloadImage(frontURL(k)),
+            preloadImage(backURL(k)),
+          ]);
+          if (pf.ok && pb.ok) {
+            n = k;
+            state.sizes[k] = { w: pf.width, h: pf.height };
+          } else {
+            break;
+          }
+        }
+        return n;
+      }
+
+      function rebuildDeck(keepCardNo = null) {
+        const { total } = state;
+        let newDeck = Array.from({ length: total }, (_, i) => i + 1);
+        if (state.shuffle) shuffleInPlace(newDeck);
+        if (keepCardNo) {
+          const idx = newDeck.indexOf(keepCardNo);
+          state.deck = newDeck;
+          state.i = Math.max(0, idx);
+        } else {
+          state.deck = newDeck;
+          state.i = 0;
+        }
+      }
+
+      function updateCounter() {
+        const el = qs("#counter");
+        if (!state.total) {
+          el.textContent = "No images found.";
+          return;
+        }
+        const n = state.deck[state.i];
+        el.textContent = `Card ${n} of ${state.total} ${
+          state.shuffle ? "(random)" : ""
+        }`;
+      }
+
+      function setFlipped(on) {
+        state.flipped = on;
+        const card3d = qs("#card3d");
+
+        // Add flipping class for enhanced shadow during animation
+        card3d.classList.add("flipping");
+        setTimeout(() => card3d.classList.remove("flipping"), 600);
+
+        card3d.classList.toggle("flipped", on);
+        card3d.setAttribute("aria-pressed", String(on));
+      }
+
+      // Size the stage to the image AR; ensures image == container size exactly
+      function sizeStageForImage(naturalW, naturalH) {
+        const stage = qs("#stage");
+        const maxWidth = Math.min(window.innerWidth * 0.92, 1000);
+        const maxHeight = Math.min(
+          window.innerHeight * 0.7,
+          window.innerHeight * 0.7
+        );
+
+        const widthByHeight = maxHeight * (naturalW / naturalH);
+        const finalWidth = Math.min(maxWidth, widthByHeight);
+        const finalHeight = finalWidth * (naturalH / naturalW);
+
+        stage.style.width = `${finalWidth}px`;
+        stage.style.height = `${finalHeight}px`;
+      }
+
+      function showCurrent() {
+        const n = state.deck[state.i];
+        const size = state.sizes[n];
+        if (size && size.w > 0 && size.h > 0) {
+          sizeStageForImage(size.w, size.h);
+        }
+
+        const front = qs("#frontImg");
+        const back = qs("#backImg");
+
+        // Fade out counter briefly during transition
+        const counter = qs("#counter");
+        counter.style.opacity = "0.5";
+        setTimeout(() => (counter.style.opacity = "1"), 300);
+
+        front.src = frontURL(n);
+        back.src = backURL(n);
+
+        setFlipped(false);
+        updateCounter();
+
+        // Preload neighbors and capture sizes if needed
+        const next = state.deck[(state.i + 1) % state.deck.length];
+        const prev =
+          state.deck[(state.i - 1 + state.deck.length) % state.deck.length];
+        [next, prev].forEach(async (k) => {
+          if (!state.sizes[k]) {
+            const pf = await preloadImage(frontURL(k));
+            if (pf.ok) state.sizes[k] = { w: pf.width, h: pf.height };
+          }
+          preloadImage(frontURL(k));
+          preloadImage(backURL(k));
+        });
+      }
+
+      function nextCard() {
+        state.i = (state.i + 1) % state.deck.length;
+        showCurrent();
+      }
+      function prevCard() {
+        state.i = (state.i - 1 + state.deck.length) % state.deck.length;
+        showCurrent();
+      }
+
+      function toggleShuffle() {
+        state.shuffle = !state.shuffle;
+        localStorage.setItem("fc_shuffle", JSON.stringify(state.shuffle));
+        const keep = state.deck[state.i];
+        rebuildDeck(keep);
+        updateShuffleUI();
+        showCurrent();
+      }
+
+      function updateShuffleUI() {
+        const sw = qs("#shuffleSwitch");
+        sw.classList.toggle("on", state.shuffle);
+        sw.setAttribute("aria-checked", String(state.shuffle));
+      }
+
+      function bindUI() {
+        const shell = qs("#cardShell");
+        shell.addEventListener("click", () => setFlipped(!state.flipped));
+        qs("#flipBtn").addEventListener("click", () =>
+          setFlipped(!state.flipped)
+        );
+        qs("#nextBtn").addEventListener("click", nextCard);
+        qs("#prevBtn").addEventListener("click", prevCard);
+
+        const sw = qs("#shuffleSwitch");
+        const toggler = () => toggleShuffle();
+        sw.addEventListener("click", toggler);
+        sw.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggler();
+          }
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener("keydown", (e) => {
+          if (
+            e.target &&
+            ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)
+          )
+            return;
+          if (e.key === "ArrowRight") nextCard();
+          else if (e.key === "ArrowLeft") prevCard();
+          else if (e.key === " ") {
+            e.preventDefault();
+            setFlipped(!state.flipped);
+          } else if (e.key.toLowerCase() === "r") toggleShuffle();
+        });
+
+        // Recompute on resize
+        window.addEventListener("resize", () => {
+          const n = state.deck[state.i];
+          const size = state.sizes[n];
+          if (size) sizeStageForImage(size.w, size.h);
+        });
+      }
+
+      (async function init() {
+        bindUI();
+        updateShuffleUI();
+        const total = await discoverPairs();
+        state.total = total;
+        if (!total) {
+          qs(
+            "#counter"
+          ).textContent = `No card images found in "${BASE_PATH}". Place files named front1.png, back1.png, … and reload.`;
+          return;
+        }
+        rebuildDeck();
+        showCurrent();
+      })();
+    </script>
+  </body>
+</html>
