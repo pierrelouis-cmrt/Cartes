@@ -529,7 +529,7 @@
             n < Math.min(start + batchSize, MAX_CHAPTERS_PROBE + 1);
             n++
           ) {
-            const p = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
+            const p = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
             batch.push(probeImage(p).then((r) => (r.ok ? n : null)));
           }
           const results = await Promise.all(batch);
@@ -545,7 +545,7 @@
 
       function applyChapter(n) {
         state.chapter = n;
-        state.basePath = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
+        state.basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
         localStorage.setItem("fc_chapter", String(n));
       }
 
@@ -996,7 +996,7 @@
         if (!chapters.length) {
           hideSkeleton();
           qs("#counter").textContent =
-            "Aucun chapitre trouvé (dossier 'chN_cartes').";
+            "Aucun chapitre trouvé (dossier 'flashcards/chN_cartes').";
           return;
         }
 

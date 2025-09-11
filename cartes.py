@@ -2,8 +2,8 @@
 Extrait des flashcards recto-verso d'un PDF en PNGs séquentiels + manifest.json.
 
 Nouveautés :
-- Sélection interactive du PDF dans un répertoire.
-- Dossier de sortie = nom du PDF (sans extension).
+- Sélection interactive du PDF dans un répertoire (par défaut: dossier "flashcards" à côté du script).
+- Dossier de sortie = nom du PDF (sans extension) créé dans ce même dossier.
 - Nettoyage des "fines lignes blanches" via inspection au milieu des côtés.
 - Option de fond transparent : supprime TOUT le blanc EXTERNE (coins arrondis compris)
   en conservant le blanc INTERNE de la carte (flood-fill depuis les bords).
@@ -14,9 +14,9 @@ Nouveautés :
     Les cartes violettes n'ont pas de timer (timer = none).
 
 Exemples :
-    python cartes_with_manifest.py
-    python cartes_with_manifest.py --search-dir /chemin/vers/mes_pdfs --no-transparent
-    python cartes_with_manifest.py --white-threshold 245 --barrier-dilate 1
+    python cartes.py
+    python cartes.py --no-transparent
+    python cartes.py --search-dir /chemin/vers/mes_pdfs --white-threshold 245 --barrier-dilate 1
 
 Dépendances :
     pip install pymupdf pillow numpy
@@ -550,7 +550,13 @@ def main():
     parser = argparse.ArgumentParser(
         description="Découpe de cartes PDF en PNG (sélection interactive, trim, fond transparent) + manifest.json."
     )
-    parser.add_argument("--search-dir", default=".", help="Répertoire où chercher les PDFs.")
+    # Par défaut, chercher dans le dossier 'flashcards' à côté de ce script
+    default_search = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flashcards")
+    parser.add_argument(
+        "--search-dir",
+        default=default_search,
+        help="Répertoire où chercher les PDFs (défaut: dossier 'flashcards' à côté du script).",
+    )
     parser.add_argument("--dpi", type=int, default=300, help="DPI de rendu (défaut 300).")
     parser.add_argument("--white-threshold", type=int, default=220, help="Seuil 0–255 pour 'blanc' (défaut 220).")
     parser.add_argument("--band-frac", type=float, default=0.10, help="Épaisseur de bande centrale (trim) 0–0.5.")
