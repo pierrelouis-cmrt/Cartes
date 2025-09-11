@@ -10,5 +10,4 @@ Chapitre 1
 - white space around cards due to the cropping script not being perfect and maybe css
 
 - filter cards by color (difficulty and/or time) and filter out purple empty cards
-- flicker on navigation from back: when advancing while a card is flipped, the next card briefly shows its back
-- add skeleton and improve loading speed
+- remove background of the div container of the img, and remove the dynamic border radius at the same time

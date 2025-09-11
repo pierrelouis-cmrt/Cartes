@@ -74,7 +74,7 @@
         width: 100%;
         height: 100%;
         cursor: pointer;
-        transition: transform 0.15s ease-out;
+        transition: transform 0.15s ease-out, opacity 0.2s ease-out;
       }
 
       .card-shell:hover {
@@ -83,6 +83,96 @@
 
       .card-shell:active {
         transform: translateY(0px) scale(0.98);
+      }
+
+      /* Transition states for navigation */
+      .card-shell.transitioning {
+        animation: cardTransition 0.3s ease-out;
+      }
+
+      @keyframes cardTransition {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        40% {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        60% {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* Alternative subtle slide animation */
+      @keyframes slideTransition {
+        0% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        40% {
+          opacity: 0;
+          transform: translateX(-10px);
+        }
+        60% {
+          opacity: 0;
+          transform: translateX(10px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .card-shell.slide-left {
+        animation: slideTransitionLeft 0.3s ease-out;
+      }
+
+      @keyframes slideTransitionLeft {
+        0% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        40% {
+          opacity: 0;
+          transform: translateX(-15px);
+        }
+        60% {
+          opacity: 0;
+          transform: translateX(15px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .card-shell.slide-right {
+        animation: slideTransitionRight 0.3s ease-out;
+      }
+
+      @keyframes slideTransitionRight {
+        0% {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        40% {
+          opacity: 0;
+          transform: translateX(15px);
+        }
+        60% {
+          opacity: 0;
+          transform: translateX(-15px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateX(0);
+        }
       }
 
       /* Inner flipper with smooth animation */
@@ -97,6 +187,11 @@
         transform: rotateY(0deg);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
+      }
+
+      /* Disable transitions when resetting orientation between cards */
+      .card3d.no-anim {
+        transition: none !important;
       }
 
       .card3d.flipping {
@@ -275,7 +370,12 @@
   </head>
   <body>
     <header>
-      <h1>Cartes mémoire physique chapitre 1</h1>
+      <h1>
+        Cartes mémoire physique
+        <select id="chapterSelect" aria-label="Choisir un chapitre">
+          <!-- options générées dynamiquement -->
+        </select>
+      </h1>
       <div class="sub">
         Cliquez sur la carte pour la retourner. Utilisez ← / → pour naviguer,
         barre d'espace pour retourner.
@@ -334,8 +434,14 @@
       /* ==========================
        Configuration
        ========================== */
-      const BASE_PATH = "cropped_cards";
-      const MAX_PROBE = 10000;
+      // Découverte auto des chapitres chN_cartes via front1.png
+      // Si vous préférez gérer à la main, indiquez simplement les numéros ici :
+      // Exemple: const CHAPTERS_MANUAL = [1, 2, 3];
+      const CHAPTERS_MANUAL = [];
+      const CHAPTER_PREFIX = "ch";
+      const CHAPTER_SUFFIX = "_cartes";
+      const MAX_CHAPTERS_PROBE = 20;
+      const MAX_PROBE = 100; // nb max de cartes par chapitre à sonder
 
       /* ===== Helpers ===== */
       const qs = (s, el = document) => el.querySelector(s);
@@ -355,8 +461,8 @@
         });
       }
 
-      const frontURL = (n) => `${BASE_PATH}/front${n}.png`;
-      const backURL = (n) => `${BASE_PATH}/back${n}.png`;
+      const frontURL = (n) => `${state.basePath}/front${n}.png`;
+      const backURL = (n) => `${state.basePath}/back${n}.png`;
 
       function shuffleInPlace(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -372,8 +478,65 @@
         i: 0,
         flipped: false,
         shuffle: JSON.parse(localStorage.getItem("fc_shuffle") || "false"),
+        chapter: null,
+        basePath: "",
         sizes: {}, // { [n]: { w, h } } (based on front image)
+        isTransitioning: false, // Add flag to prevent rapid navigation
       };
+
+      async function discoverChapters() {
+        if (CHAPTERS_MANUAL.length) return CHAPTERS_MANUAL.slice();
+        const found = [];
+        for (let n = 1; n <= MAX_CHAPTERS_PROBE; n++) {
+          const p = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
+          const r = await preloadImage(p);
+          if (r.ok) found.push(n);
+        }
+        return found;
+      }
+
+      function applyChapter(n) {
+        state.chapter = n;
+        state.basePath = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
+        localStorage.setItem("fc_chapter", String(n));
+      }
+
+      async function loadChapter(n) {
+        applyChapter(n);
+        state.sizes = {};
+        state.total = 0;
+        state.deck = [];
+        state.i = 0;
+        const total = await discoverPairs();
+        state.total = total;
+        if (!total) {
+          qs(
+            "#counter"
+          ).textContent = `Aucune image de carte trouvée dans "${state.basePath}". Placez des fichiers nommés front1.png, back1.png, … puis rechargez.`;
+          return;
+        }
+        rebuildDeck();
+        showCurrent();
+      }
+
+      function buildChapterSelect(chapters) {
+        const sel = qs("#chapterSelect");
+        sel.innerHTML = "";
+        chapters.forEach((n) => {
+          const opt = document.createElement("option");
+          opt.value = String(n);
+          opt.textContent = `Chapitre ${n}`;
+          sel.appendChild(opt);
+        });
+        const stored = parseInt(localStorage.getItem("fc_chapter") || "", 10);
+        const initial = chapters.includes(stored) ? stored : chapters[0];
+        sel.value = String(initial);
+        sel.addEventListener("change", async (e) => {
+          const val = parseInt(e.target.value, 10);
+          await loadChapter(val);
+        });
+        return initial;
+      }
 
       async function discoverPairs() {
         let n = 0;
@@ -450,26 +613,70 @@
         stage.style.height = `${finalHeight}px`;
       }
 
-      function showCurrent() {
+      function showCurrent(direction = "none") {
+        if (state.isTransitioning) return;
+
         const n = state.deck[state.i];
         const size = state.sizes[n];
         if (size && size.w > 0 && size.h > 0) {
           sizeStageForImage(size.w, size.h);
         }
 
+        const cardShell = qs("#cardShell");
+        const card3d = qs("#card3d");
         const front = qs("#frontImg");
         const back = qs("#backImg");
 
         // Fade out counter briefly during transition
         const counter = qs("#counter");
         counter.style.opacity = "0.5";
-        setTimeout(() => (counter.style.opacity = "1"), 300);
 
-        front.src = frontURL(n);
-        back.src = backURL(n);
+        // Apply transition animation
+        state.isTransitioning = true;
 
-        setFlipped(false);
-        updateCounter();
+        // Remove all animation classes first
+        cardShell.classList.remove(
+          "transitioning",
+          "slide-left",
+          "slide-right"
+        );
+
+        // Choose animation based on navigation direction
+        let animationClass = "transitioning"; // default scale animation
+        if (direction === "next") {
+          animationClass = "slide-right";
+        } else if (direction === "prev") {
+          animationClass = "slide-left";
+        }
+
+        // Apply animation
+        void cardShell.offsetHeight; // Force reflow
+        cardShell.classList.add(animationClass);
+
+        // Reset card to front during the fade-out phase (at 40% of animation)
+        setTimeout(() => {
+          // Reset to front if was flipped
+          if (state.flipped) {
+            card3d.classList.add("no-anim");
+            card3d.classList.remove("flipped", "flipping");
+            card3d.setAttribute("aria-pressed", "false");
+            state.flipped = false;
+            void card3d.offsetHeight;
+            card3d.classList.remove("no-anim");
+          }
+
+          // Update images while faded out
+          front.src = frontURL(n);
+          back.src = backURL(n);
+          updateCounter();
+        }, 120); // 40% of 300ms animation
+
+        // Clean up after animation
+        setTimeout(() => {
+          cardShell.classList.remove(animationClass);
+          counter.style.opacity = "1";
+          state.isTransitioning = false;
+        }, 300);
 
         // Preload neighbors and capture sizes if needed
         const next = state.deck[(state.i + 1) % state.deck.length];
@@ -486,12 +693,15 @@
       }
 
       function nextCard() {
+        if (state.isTransitioning) return;
         state.i = (state.i + 1) % state.deck.length;
-        showCurrent();
+        showCurrent("next");
       }
+
       function prevCard() {
+        if (state.isTransitioning) return;
         state.i = (state.i - 1 + state.deck.length) % state.deck.length;
-        showCurrent();
+        showCurrent("prev");
       }
 
       function toggleShuffle() {
@@ -511,10 +721,16 @@
 
       function bindUI() {
         const shell = qs("#cardShell");
-        shell.addEventListener("click", () => setFlipped(!state.flipped));
-        qs("#flipBtn").addEventListener("click", () =>
-          setFlipped(!state.flipped)
-        );
+        shell.addEventListener("click", () => {
+          if (!state.isTransitioning) {
+            setFlipped(!state.flipped);
+          }
+        });
+        qs("#flipBtn").addEventListener("click", () => {
+          if (!state.isTransitioning) {
+            setFlipped(!state.flipped);
+          }
+        });
         qs("#nextBtn").addEventListener("click", nextCard);
         qs("#prevBtn").addEventListener("click", prevCard);
 
@@ -539,8 +755,13 @@
           else if (e.key === "ArrowLeft") prevCard();
           else if (e.key === " ") {
             e.preventDefault();
-            setFlipped(!state.flipped);
-          } else if (e.key.toLowerCase() === "r") toggleShuffle();
+            if (!state.isTransitioning) {
+              setFlipped(!state.flipped);
+            }
+          } else if (e.key.toLowerCase() === "r" && !e.ctrlKey && !e.metaKey) {
+            // Avoid toggling shuffle when user presses browser reload (Ctrl/Cmd+R)
+            toggleShuffle();
+          }
         });
 
         // Recompute on resize
@@ -554,16 +775,15 @@
       (async function init() {
         bindUI();
         updateShuffleUI();
-        const total = await discoverPairs();
-        state.total = total;
-        if (!total) {
-          qs(
-            "#counter"
-          ).textContent = `Aucune image de carte trouvée dans "${BASE_PATH}". Placez des fichiers nommés front1.png, back1.png, … puis rechargez.`;
+
+        const chapters = await discoverChapters();
+        if (!chapters.length) {
+          qs("#counter").textContent =
+            "Aucun chapitre trouvé (dossier 'chN_cartes'). Ajoutez des dossiers comme 'ch1_cartes' et rechargez, ou remplissez CHAPTERS_MANUAL.";
           return;
         }
-        rebuildDeck();
-        showCurrent();
+        const initial = buildChapterSelect(chapters);
+        await loadChapter(initial);
       })();
     </script>
   </body>
