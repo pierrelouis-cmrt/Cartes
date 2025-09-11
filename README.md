@@ -11,3 +11,7 @@ Chapitre 1
 
 - filter cards by color (difficulty and/or time) and filter out purple empty cards
 - remove background of the div container of the img, and remove the dynamic border radius at the same time
+
+- transition animation between two cards can sometimes flicker and show an additionnal card in the middle of the animation
+- loading animation not perfect
+- loading speed still awful on page load (optimization + intelligent caching of cards needed)
