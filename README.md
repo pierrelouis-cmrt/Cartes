@@ -1,7 +1,6 @@
 # cartes
 
 Cartes Physique CapECL
-Chapitre 1
 
 # bugs / things to do
 
