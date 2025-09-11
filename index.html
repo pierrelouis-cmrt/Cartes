@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cartes mémoire physique</title>
+    <link rel="preconnect" href="https://cloud.umami.is" crossorigin />
     <script
       defer
       src="https://cloud.umami.is/script.js"
@@ -17,11 +18,12 @@
         --accent: #111827;
         --btn: #111827;
         --btn-fg: #ffffff;
-        /* Scale corner radius with container size, with sensible bounds */
         --radius: clamp(6px, 8%, 52px);
         --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
         --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.16);
+        --skeleton-bg: #e5e7eb;
+        --skeleton-shine: #f3f4f6;
       }
       * {
         box-sizing: border-box;
@@ -68,6 +70,46 @@
         display: block;
       }
 
+      /* Skeleton loader */
+      .skeleton-card {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--skeleton-bg);
+        border-radius: var(--radius);
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease-out;
+      }
+
+      .skeleton-card.visible {
+        opacity: 1;
+      }
+
+      .skeleton-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--skeleton-shine),
+          transparent
+        );
+        animation: shimmer 1.5s infinite;
+      }
+
+      @keyframes shimmer {
+        to {
+          left: 100%;
+        }
+      }
+
       /* Shell holds the 3D space */
       .card-shell {
         position: relative;
@@ -75,6 +117,9 @@
         height: 100%;
         cursor: pointer;
         transition: transform 0.15s ease-out, opacity 0.2s ease-out;
+        will-change: transform, opacity;
+        contain: paint;
+        transform: translateZ(0);
       }
 
       .card-shell:hover {
@@ -85,91 +130,56 @@
         transform: translateY(0px) scale(0.98);
       }
 
-      /* Transition states for navigation */
-      .card-shell.transitioning {
-        animation: cardTransition 0.3s ease-out;
+      /* Two-phase navigation animations to avoid mid-flight content swap */
+      .card-shell.out-left {
+        animation: outLeft 140ms ease-out both;
+      }
+      .card-shell.in-right {
+        animation: inRight 180ms ease-out both;
+      }
+      .card-shell.out-right {
+        animation: outRight 140ms ease-out both;
+      }
+      .card-shell.in-left {
+        animation: inLeft 180ms ease-out both;
       }
 
-      @keyframes cardTransition {
-        0% {
-          opacity: 1;
-          transform: scale(1);
-        }
-        40% {
-          opacity: 0;
-          transform: scale(0.95);
-        }
-        60% {
-          opacity: 0;
-          transform: scale(0.95);
-        }
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-      }
-
-      /* Alternative subtle slide animation */
-      @keyframes slideTransition {
-        0% {
+      @keyframes outLeft {
+        from {
           opacity: 1;
           transform: translateX(0);
         }
-        40% {
+        to {
           opacity: 0;
-          transform: translateX(-10px);
+          transform: translateX(-12px);
         }
-        60% {
+      }
+      @keyframes inRight {
+        from {
           opacity: 0;
-          transform: translateX(10px);
+          transform: translateX(12px);
         }
-        100% {
+        to {
           opacity: 1;
           transform: translateX(0);
         }
       }
-
-      .card-shell.slide-left {
-        animation: slideTransitionLeft 0.3s ease-out;
-      }
-
-      @keyframes slideTransitionLeft {
-        0% {
+      @keyframes outRight {
+        from {
           opacity: 1;
           transform: translateX(0);
         }
-        40% {
+        to {
           opacity: 0;
-          transform: translateX(-15px);
-        }
-        60% {
-          opacity: 0;
-          transform: translateX(15px);
-        }
-        100% {
-          opacity: 1;
-          transform: translateX(0);
+          transform: translateX(12px);
         }
       }
-
-      .card-shell.slide-right {
-        animation: slideTransitionRight 0.3s ease-out;
-      }
-
-      @keyframes slideTransitionRight {
-        0% {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        40% {
+      @keyframes inLeft {
+        from {
           opacity: 0;
-          transform: translateX(15px);
+          transform: translateX(-12px);
         }
-        60% {
-          opacity: 0;
-          transform: translateX(-15px);
-        }
-        100% {
+        to {
           opacity: 1;
           transform: translateX(0);
         }
@@ -187,9 +197,9 @@
         transform: rotateY(0deg);
         border-radius: var(--radius);
         box-shadow: var(--shadow);
+        will-change: transform;
       }
 
-      /* Disable transitions when resetting orientation between cards */
       .card3d.no-anim {
         transition: none !important;
       }
@@ -232,13 +242,12 @@
         background: #ffffff;
         pointer-events: none;
         opacity: 0;
-        animation: fadeIn 0.3s ease-out forwards;
+        transition: opacity 0.2s ease-out;
+        will-change: opacity;
       }
 
-      @keyframes fadeIn {
-        to {
-          opacity: 1;
-        }
+      .face img.loaded {
+        opacity: 1;
       }
 
       /* Controls with smooth transitions */
@@ -351,21 +360,6 @@
         position: absolute;
         left: -9999px;
       }
-
-      /* Loading state */
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-      }
-
-      .loading {
-        animation: pulse 1.5s ease-in-out infinite;
-      }
     </style>
   </head>
   <body>
@@ -384,6 +378,7 @@
 
     <main class="wrap">
       <section class="stage" id="stage" aria-label="Carte mémoire">
+        <div class="skeleton-card" id="skeleton"></div>
         <div class="card-shell" id="cardShell">
           <div
             class="card3d"
@@ -434,31 +429,60 @@
       /* ==========================
        Configuration
        ========================== */
-      // Découverte auto des chapitres chN_cartes via front1.png
-      // Si vous préférez gérer à la main, indiquez simplement les numéros ici :
-      // Exemple: const CHAPTERS_MANUAL = [1, 2, 3];
       const CHAPTERS_MANUAL = [];
       const CHAPTER_PREFIX = "ch";
       const CHAPTER_SUFFIX = "_cartes";
       const MAX_CHAPTERS_PROBE = 20;
-      const MAX_PROBE = 100; // nb max de cartes par chapitre à sonder
+      const MAX_PROBE = 100;
+      const PRELOAD_RADIUS = 2; // Only preload ±2 cards around current
 
       /* ===== Helpers ===== */
       const qs = (s, el = document) => el.querySelector(s);
 
-      function preloadImage(url) {
-        return new Promise((resolve) => {
+      // Image cache to avoid redundant loads
+      const imageCache = new Map();
+      const loadingImages = new Map();
+
+      function loadImage(url, useCache = true) {
+        // Return cached promise if available
+        if (useCache && imageCache.has(url)) {
+          return Promise.resolve(imageCache.get(url));
+        }
+
+        // Return existing loading promise if in progress
+        if (loadingImages.has(url)) {
+          return loadingImages.get(url);
+        }
+
+        // Create new loading promise
+        const promise = new Promise((resolve) => {
           const img = new Image();
-          img.onload = () =>
-            resolve({
+          img.onload = () => {
+            const result = {
               ok: true,
               width: img.naturalWidth,
               height: img.naturalHeight,
-            });
-          img.onerror = () => resolve({ ok: false });
-          // cache-bust only when probing/preloading to force existence checks
-          img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
+              src: url,
+            };
+            if (useCache) imageCache.set(url, result);
+            loadingImages.delete(url);
+            resolve(result);
+          };
+          img.onerror = () => {
+            const result = { ok: false, src: url };
+            loadingImages.delete(url);
+            resolve(result);
+          };
+          img.src = url;
         });
+
+        loadingImages.set(url, promise);
+        return promise;
+      }
+
+      // Only use cache-busting for discovery
+      function probeImage(url) {
+        return loadImage(url + "?probe=" + Date.now(), false);
       }
 
       const frontURL = (n) => `${state.basePath}/front${n}.png`;
@@ -480,18 +504,46 @@
         shuffle: JSON.parse(localStorage.getItem("fc_shuffle") || "false"),
         chapter: null,
         basePath: "",
-        sizes: {}, // { [n]: { w, h } } (based on front image)
-        isTransitioning: false, // Add flag to prevent rapid navigation
+        sizes: {},
+        isTransitioning: false,
+        imagesLoaded: new Set(),
       };
+
+      // Skeleton loader management
+      function showSkeleton() {
+        const skeleton = qs("#skeleton");
+        skeleton.classList.add("visible");
+      }
+
+      function hideSkeleton() {
+        const skeleton = qs("#skeleton");
+        skeleton.classList.remove("visible");
+      }
 
       async function discoverChapters() {
         if (CHAPTERS_MANUAL.length) return CHAPTERS_MANUAL.slice();
         const found = [];
-        for (let n = 1; n <= MAX_CHAPTERS_PROBE; n++) {
-          const p = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
-          const r = await preloadImage(p);
-          if (r.ok) found.push(n);
+
+        // Parallel discovery with batching
+        const batchSize = 5;
+        for (let start = 1; start <= MAX_CHAPTERS_PROBE; start += batchSize) {
+          const batch = [];
+          for (
+            let n = start;
+            n < Math.min(start + batchSize, MAX_CHAPTERS_PROBE + 1);
+            n++
+          ) {
+            const p = `${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
+            batch.push(probeImage(p).then((r) => (r.ok ? n : null)));
+          }
+          const results = await Promise.all(batch);
+          const validChapters = results.filter((n) => n !== null);
+          found.push(...validChapters);
+
+          // Stop if we found a gap
+          if (validChapters.length < batch.length) break;
         }
+
         return found;
       }
 
@@ -502,21 +554,27 @@
       }
 
       async function loadChapter(n) {
+        showSkeleton();
         applyChapter(n);
         state.sizes = {};
         state.total = 0;
         state.deck = [];
         state.i = 0;
+        state.imagesLoaded.clear();
+
         const total = await discoverPairs();
         state.total = total;
+
         if (!total) {
+          hideSkeleton();
           qs(
             "#counter"
-          ).textContent = `Aucune image de carte trouvée dans "${state.basePath}". Placez des fichiers nommés front1.png, back1.png, … puis rechargez.`;
+          ).textContent = `Aucune image de carte trouvée dans "${state.basePath}".`;
           return;
         }
+
         rebuildDeck();
-        showCurrent();
+        await showCurrent();
       }
 
       function buildChapterSelect(chapters) {
@@ -539,20 +597,45 @@
       }
 
       async function discoverPairs() {
-        let n = 0;
-        for (let k = 1; k <= MAX_PROBE; k++) {
+        // Binary search for finding the last valid card
+        let left = 1,
+          right = MAX_PROBE,
+          lastValid = 0;
+
+        while (left <= right) {
+          const mid = Math.floor((left + right) / 2);
           const [pf, pb] = await Promise.all([
-            preloadImage(frontURL(k)),
-            preloadImage(backURL(k)),
+            probeImage(frontURL(mid)),
+            probeImage(backURL(mid)),
           ]);
+
           if (pf.ok && pb.ok) {
-            n = k;
-            state.sizes[k] = { w: pf.width, h: pf.height };
+            lastValid = mid;
+            state.sizes[mid] = { w: pf.width, h: pf.height };
+            left = mid + 1;
           } else {
-            break;
+            right = mid - 1;
           }
         }
-        return n;
+
+        // Fill in any gaps in the range [1, lastValid]
+        if (lastValid > 0) {
+          const checks = [];
+          for (let k = 1; k <= lastValid; k++) {
+            if (!state.sizes[k]) {
+              checks.push(
+                probeImage(frontURL(k)).then((pf) => {
+                  if (pf.ok) {
+                    state.sizes[k] = { w: pf.width, h: pf.height };
+                  }
+                })
+              );
+            }
+          }
+          await Promise.all(checks);
+        }
+
+        return lastValid;
       }
 
       function rebuildDeck(keepCardNo = null) {
@@ -565,7 +648,6 @@
           state.i = Math.max(0, idx);
         } else {
           state.deck = newDeck;
-          // If shuffle is enabled, start at a random index so the first card shown is random
           state.i = state.shuffle
             ? Math.floor(Math.random() * newDeck.length)
             : 0;
@@ -587,23 +669,16 @@
       function setFlipped(on) {
         state.flipped = on;
         const card3d = qs("#card3d");
-
-        // Add flipping class for enhanced shadow during animation
         card3d.classList.add("flipping");
         setTimeout(() => card3d.classList.remove("flipping"), 600);
-
         card3d.classList.toggle("flipped", on);
         card3d.setAttribute("aria-pressed", String(on));
       }
 
-      // Size the stage to the image AR; ensures image == container size exactly
       function sizeStageForImage(naturalW, naturalH) {
         const stage = qs("#stage");
         const maxWidth = Math.min(window.innerWidth * 0.92, 1000);
-        const maxHeight = Math.min(
-          window.innerHeight * 0.7,
-          window.innerHeight * 0.7
-        );
+        const maxHeight = window.innerHeight * 0.7;
 
         const widthByHeight = maxHeight * (naturalW / naturalH);
         const finalWidth = Math.min(maxWidth, widthByHeight);
@@ -613,7 +688,27 @@
         stage.style.height = `${finalHeight}px`;
       }
 
-      function showCurrent(direction = "none") {
+      function waitAnimationEnd(el, name, fallback = 600) {
+        return new Promise((resolve) => {
+          let done = false;
+          const onEnd = (e) => {
+            if (e.animationName === name) {
+              done = true;
+              el.removeEventListener("animationend", onEnd);
+              resolve();
+            }
+          };
+          el.addEventListener("animationend", onEnd);
+          setTimeout(() => {
+            if (!done) {
+              el.removeEventListener("animationend", onEnd);
+              resolve();
+            }
+          }, fallback);
+        });
+      }
+
+      async function showCurrent(direction = "none") {
         if (state.isTransitioning) return;
 
         const n = state.deck[state.i];
@@ -624,71 +719,149 @@
 
         const cardShell = qs("#cardShell");
         const card3d = qs("#card3d");
-        const front = qs("#frontImg");
-        const back = qs("#backImg");
+        const frontImg = qs("#frontImg");
+        const backImg = qs("#backImg");
 
-        // Fade out counter briefly during transition
-        const counter = qs("#counter");
-        counter.style.opacity = "0.5";
-
-        // Apply transition animation
-        state.isTransitioning = true;
-
-        // Remove all animation classes first
-        cardShell.classList.remove(
-          "transitioning",
-          "slide-left",
-          "slide-right"
-        );
-
-        // Choose animation based on navigation direction
-        let animationClass = "transitioning"; // default scale animation
-        if (direction === "next") {
-          animationClass = "slide-right";
-        } else if (direction === "prev") {
-          animationClass = "slide-left";
+        // Show skeleton immediately if images not loaded
+        const isFirstLoad = !state.imagesLoaded.has(n);
+        if (isFirstLoad) {
+          showSkeleton();
         }
 
-        // Apply animation
-        void cardShell.offsetHeight; // Force reflow
-        cardShell.classList.add(animationClass);
+        state.isTransitioning = true;
 
-        // Reset card to front during the fade-out phase (at 40% of animation)
-        setTimeout(() => {
-          // Reset to front if was flipped
+        // Helper to swap images while hidden
+        const swapImages = async () => {
           if (state.flipped) {
             card3d.classList.add("no-anim");
             card3d.classList.remove("flipped", "flipping");
             card3d.setAttribute("aria-pressed", "false");
             state.flipped = false;
-            void card3d.offsetHeight;
+            void card3d.offsetHeight; // flush
             card3d.classList.remove("no-anim");
           }
 
-          // Update images while faded out
-          front.src = frontURL(n);
-          back.src = backURL(n);
-          updateCounter();
-        }, 120); // 40% of 300ms animation
+          // Reset image loaded state (keep hidden until ready)
+          frontImg.classList.remove("loaded");
+          backImg.classList.remove("loaded");
 
-        // Clean up after animation
-        setTimeout(() => {
-          cardShell.classList.remove(animationClass);
-          counter.style.opacity = "1";
-          state.isTransitioning = false;
-        }, 300);
+          // Load images in parallel
+          const [front, back] = await Promise.all([
+            loadImage(frontURL(n)),
+            loadImage(backURL(n)),
+          ]);
 
-        // Preload neighbors and capture sizes if needed
-        const next = state.deck[(state.i + 1) % state.deck.length];
-        const prev =
-          state.deck[(state.i - 1 + state.deck.length) % state.deck.length];
-        [next, prev].forEach(async (k) => {
-          if (!state.sizes[k]) {
-            const pf = await preloadImage(frontURL(k));
-            if (pf.ok) state.sizes[k] = { w: pf.width, h: pf.height };
+          // Update sources
+          frontImg.src = front.src;
+          backImg.src = back.src;
+
+          // Wait for ready-to-paint; try decode() first, fallback to onload
+          try {
+            if (frontImg.decode && backImg.decode) {
+              await Promise.all([frontImg.decode(), backImg.decode()]);
+            } else {
+              await Promise.all([
+                new Promise((resolve) => {
+                  if (frontImg.complete) resolve();
+                  else frontImg.onload = resolve;
+                }),
+                new Promise((resolve) => {
+                  if (backImg.complete) resolve();
+                  else backImg.onload = resolve;
+                }),
+              ]);
+            }
+          } catch (_) {
+            // Fallback: ensure at least load events have fired
+            await Promise.all([
+              new Promise((resolve) => {
+                if (frontImg.complete) resolve();
+                else frontImg.onload = resolve;
+              }),
+              new Promise((resolve) => {
+                if (backImg.complete) resolve();
+                else backImg.onload = resolve;
+              }),
+            ]);
           }
-          preloadImage(frontURL(k));
-          preloadImage(backURL(k));
+
+          state.imagesLoaded.add(n);
+          frontImg.classList.add("loaded");
+          backImg.classList.add("loaded");
+          hideSkeleton();
+          updateCounter();
+        };
+
+        // No animation case (initial load or programmatic)
+        if (direction === "none") {
+          await swapImages();
+          state.isTransitioning = false;
+          preloadNearbyCards();
+          return;
+        }
+
+        // Determine classes for out/in phases
+        // Next: slide old left, bring new from right. Prev: opposite.
+        const outClass = direction === "next" ? "out-left" : "out-right";
+        const outName = direction === "next" ? "outLeft" : "outRight";
+        const inClass = direction === "next" ? "in-right" : "in-left";
+        const inName = direction === "next" ? "inRight" : "inLeft";
+
+        // Clean previous animation classes, if any
+        cardShell.classList.remove("out-left", "out-right", "in-left", "in-right");
+        void cardShell.offsetWidth; // flush
+
+        // Phase 1: animate out to fully hidden
+        cardShell.classList.add(outClass);
+        await waitAnimationEnd(cardShell, outName, 400);
+
+        // Swap content while hidden
+        await swapImages();
+
+        // Phase 2: animate in to visible
+        cardShell.classList.remove(outClass);
+        void cardShell.offsetWidth; // flush
+        cardShell.classList.add(inClass);
+        await waitAnimationEnd(cardShell, inName, 500);
+        cardShell.classList.remove(inClass);
+
+        state.isTransitioning = false;
+
+        // Smart preloading: only preload nearby cards
+        preloadNearbyCards();
+      }
+
+      function preloadNearbyCards() {
+        const { deck, i } = state;
+        const preloadIndices = [];
+
+        for (let offset = 1; offset <= PRELOAD_RADIUS; offset++) {
+          preloadIndices.push(
+            (i + offset) % deck.length,
+            (i - offset + deck.length) % deck.length
+          );
+        }
+
+        // Preload in background without blocking
+        preloadIndices.forEach((idx) => {
+          const k = deck[idx];
+          if (k && !state.imagesLoaded.has(k)) {
+            // Use requestIdleCallback for non-blocking preload
+            if ("requestIdleCallback" in window) {
+              requestIdleCallback(
+                () => {
+                  loadImage(frontURL(k));
+                  loadImage(backURL(k));
+                },
+                { timeout: 2000 }
+              );
+            } else {
+              setTimeout(() => {
+                loadImage(frontURL(k));
+                loadImage(backURL(k));
+              }, 100);
+            }
+          }
         });
       }
 
@@ -744,7 +917,6 @@
           }
         });
 
-        // Keyboard shortcuts
         window.addEventListener("keydown", (e) => {
           if (
             e.target &&
@@ -759,16 +931,19 @@
               setFlipped(!state.flipped);
             }
           } else if (e.key.toLowerCase() === "r" && !e.ctrlKey && !e.metaKey) {
-            // Avoid toggling shuffle when user presses browser reload (Ctrl/Cmd+R)
             toggleShuffle();
           }
         });
 
-        // Recompute on resize
+        // Debounced resize handler
+        let resizeTimeout;
         window.addEventListener("resize", () => {
-          const n = state.deck[state.i];
-          const size = state.sizes[n];
-          if (size) sizeStageForImage(size.w, size.h);
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            const n = state.deck[state.i];
+            const size = state.sizes[n];
+            if (size) sizeStageForImage(size.w, size.h);
+          }, 100);
         });
       }
 
@@ -776,12 +951,16 @@
         bindUI();
         updateShuffleUI();
 
+        showSkeleton();
         const chapters = await discoverChapters();
+
         if (!chapters.length) {
+          hideSkeleton();
           qs("#counter").textContent =
-            "Aucun chapitre trouvé (dossier 'chN_cartes'). Ajoutez des dossiers comme 'ch1_cartes' et rechargez, ou remplissez CHAPTERS_MANUAL.";
+            "Aucun chapitre trouvé (dossier 'chN_cartes').";
           return;
         }
+
         const initial = buildChapterSelect(chapters);
         await loadChapter(initial);
       })();
