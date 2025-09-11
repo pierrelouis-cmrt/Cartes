@@ -78,7 +78,6 @@
         width: 100%;
         height: 100%;
         background: var(--skeleton-bg);
-        border-radius: var(--radius);
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.2s ease-out;
@@ -195,7 +194,6 @@
         transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
           box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         transform: rotateY(0deg);
-        border-radius: var(--radius);
         box-shadow: var(--shadow);
         will-change: transform;
       }
@@ -220,9 +218,7 @@
         height: 100%;
         backface-visibility: hidden;
         -webkit-backface-visibility: hidden;
-        border-radius: var(--radius);
         overflow: hidden;
-        background: #ffffff;
         transition: opacity 0.3s ease-in-out;
       }
 
@@ -239,7 +235,6 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        background: #ffffff;
         pointer-events: none;
         opacity: 0;
         transition: opacity 0.2s ease-out;
@@ -507,6 +502,7 @@
         sizes: {},
         isTransitioning: false,
         imagesLoaded: new Set(),
+        manifest: null,
       };
 
       // Skeleton loader management
@@ -553,6 +549,20 @@
         localStorage.setItem("fc_chapter", String(n));
       }
 
+      async function loadManifest() {
+        state.manifest = null;
+        const url = `${state.basePath}/manifest.json`;
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) return;
+          const data = await res.json();
+          state.manifest = data;
+        } catch (_) {
+          // Manifest is optional; ignore failures
+          state.manifest = null;
+        }
+      }
+
       async function loadChapter(n) {
         showSkeleton();
         applyChapter(n);
@@ -565,6 +575,9 @@
         const total = await discoverPairs();
         state.total = total;
 
+        // Try to load optional manifest for filtering
+        await loadManifest();
+
         if (!total) {
           hideSkeleton();
           qs(
@@ -574,6 +587,11 @@
         }
 
         rebuildDeck();
+        if (!state.deck.length) {
+          hideSkeleton();
+          qs("#counter").textContent = "Aucune carte disponible.";
+          return;
+        }
         await showCurrent();
       }
 
@@ -639,8 +657,29 @@
       }
 
       function rebuildDeck(keepCardNo = null) {
-        const { total } = state;
+        const { total, manifest } = state;
         let newDeck = Array.from({ length: total }, (_, i) => i + 1);
+
+        // Exclude purple-tagged cards if manifest available
+        if (manifest) {
+          const purple = new Set();
+          if (manifest.per_card && typeof manifest.per_card === "object") {
+            for (const [k, v] of Object.entries(manifest.per_card)) {
+              if (v && v.border === "purple") purple.add(parseInt(k, 10));
+            }
+          } else if (
+            manifest.cards_by_border &&
+            Array.isArray(manifest.cards_by_border.purple)
+          ) {
+            manifest.cards_by_border.purple.forEach((n) =>
+              purple.add(parseInt(n, 10))
+            );
+          }
+          if (purple.size) {
+            newDeck = newDeck.filter((n) => !purple.has(n));
+          }
+        }
+
         if (state.shuffle) shuffleInPlace(newDeck);
         if (keepCardNo != null) {
           const idx = newDeck.indexOf(keepCardNo);
@@ -656,12 +695,12 @@
 
       function updateCounter() {
         const el = qs("#counter");
-        if (!state.total) {
+        if (!state.deck.length) {
           el.textContent = "Aucune image trouvée.";
           return;
         }
         const n = state.deck[state.i];
-        el.textContent = `Carte ${n} sur ${state.total} ${
+        el.textContent = `Carte ${n} sur ${state.deck.length} ${
           state.shuffle ? "(aléatoire)" : ""
         }`;
       }
