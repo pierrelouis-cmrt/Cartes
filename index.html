@@ -12,58 +12,122 @@
     ></script>
     <style>
       :root {
-        --bg: #f7f7f9;
-        --fg: #0f172a;
+        --bg: #ffffff;
+        --fg: #0f0f0f;
         --muted: #6b7280;
         --accent: #111827;
-        --btn: #111827;
+        --btn: #0f0f0f;
         --btn-fg: #ffffff;
-        --radius: clamp(6px, 8%, 52px);
+        --btn-hover: #2a2a2a;
+        --border: #e5e7eb;
+        --radius: 12px;
         --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
         --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.16);
-        --skeleton-bg: #e5e7eb;
-        --skeleton-shine: #f3f4f6;
+        --skeleton-bg: #f3f4f6;
+        --skeleton-shine: #ffffff;
+        --green: #22c55e;
+        --orange: #fb923c;
+        --red: #ef4444;
+        --gray: #d1d5db;
       }
+
       * {
         box-sizing: border-box;
       }
+
       body {
         margin: 0;
         background: var(--bg);
         color: var(--fg);
-        font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
-          Arial, "Apple Color Emoji", "Segoe UI Emoji";
-        display: grid;
-        min-height: 100dvh;
-        grid-template-rows: auto 1fr auto;
+        font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        overflow-x: hidden;
       }
+
+      /* Main app container - exactly 100vh */
+      .app-container {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+      }
+
+      /* Header */
       header {
-        padding: 22px 20px 10px;
-        text-align: center;
-      }
-      h1 {
-        font-size: 22px;
-        margin: 0 0 8px;
-        letter-spacing: 0.2px;
-      }
-      .sub {
-        color: var(--muted);
-        font-size: 14px;
+        padding: 20px 24px 12px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+        z-index: 10;
       }
 
-      .wrap {
-        max-width: 1100px;
+      .header-content {
+        max-width: 1200px;
         margin: 0 auto;
-        padding: 10px 16px 22px;
-        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
       }
 
-      /* Stage */
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      /* Chapter selector - styled as minimal dropdown */
+      .chapter-select {
+        appearance: none;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        padding: 6px 32px 6px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23111827' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+      }
+
+      .chapter-select:hover {
+        border-color: var(--accent);
+      }
+
+      .chapter-select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+      }
+
+      .help-text {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0;
+      }
+
+      /* Main content area */
+      .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        min-height: 0;
+      }
+
+      /* Stage for card */
       .stage {
         position: relative;
-        margin: 10px auto 18px;
-        width: min(92vw, 1000px);
+        margin: 0 auto 24px;
+        width: min(90vw, 900px);
         perspective: 2000px;
         -webkit-perspective: 2000px;
         user-select: none;
@@ -78,6 +142,7 @@
         width: 100%;
         height: 100%;
         background: var(--skeleton-bg);
+        border-radius: 20px; /* Just for skeleton */
         overflow: hidden;
         opacity: 0;
         transition: opacity 0.2s ease-out;
@@ -109,7 +174,7 @@
         }
       }
 
-      /* Shell holds the 3D space */
+      /* Card shell and 3D card (keeping your original animations) */
       .card-shell {
         position: relative;
         width: 100%;
@@ -129,7 +194,6 @@
         transform: translateY(0px) scale(0.98);
       }
 
-      /* Two-phase navigation animations to avoid mid-flight content swap */
       .card-shell.out-left {
         animation: outLeft 140ms ease-out both;
       }
@@ -184,17 +248,14 @@
         }
       }
 
-      /* Inner flipper with smooth animation */
       .card3d {
         position: relative;
         width: 100%;
         height: 100%;
         transform-style: preserve-3d;
         -webkit-transform-style: preserve-3d;
-        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-          box-shadow 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         transform: rotateY(0deg);
-        box-shadow: var(--shadow);
         will-change: transform;
       }
 
@@ -203,7 +264,7 @@
       }
 
       .card3d.flipping {
-        box-shadow: var(--shadow-active);
+        /* No shadow during flip */
       }
 
       .card3d.flipped {
@@ -245,108 +306,304 @@
         opacity: 1;
       }
 
-      /* Controls with smooth transitions */
-      .controls {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        align-items: center;
-        flex-wrap: wrap;
+      /* Controls section */
+      .controls-wrapper {
+        width: 100%;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 20px;
       }
 
-      button,
-      .toggle {
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+      }
+
+      /* Navigation buttons */
+      .nav-buttons {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .btn {
         appearance: none;
         border: 0;
         background: var(--btn);
         color: var(--btn-fg);
-        padding: 12px 16px;
-        border-radius: 12px;
+        padding: 12px 24px;
+        border-radius: var(--radius);
+        font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        transform: translateY(0);
-      }
-
-      button:hover:not(:disabled),
-      .toggle:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      button:active:not(:disabled),
-      .toggle:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-      }
-
-      button.secondary {
-        background: #e5e7eb;
-        color: #111827;
-      }
-
-      button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-      }
-
-      .toggle {
         display: inline-flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 12px;
-      }
-
-      .switch {
-        width: 42px;
-        height: 26px;
-        background: #e5e7eb;
-        border-radius: 999px;
+        gap: 8px;
         position: relative;
-        transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
       }
 
-      .knob {
-        position: absolute;
-        top: 3px;
-        left: 3px;
+      .btn:hover:not(:disabled) {
+        background: var(--btn-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .btn:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn.secondary {
+        background: transparent;
+        color: var(--fg);
+        border: 2px solid var(--border);
+      }
+
+      .btn.secondary:hover:not(:disabled) {
+        background: var(--fg);
+        color: var(--bg);
+        border-color: var(--fg);
+      }
+
+      .btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .btn-icon {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .btn-flip {
+        background: var(--accent);
+        padding: 12px 32px;
+      }
+
+      /* Filter controls */
+      .filter-controls {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+        /* Enlarge the overall tap/click target */
+        padding: 6px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        /* Prevent text selection on double click */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        /* Remove mobile tap highlight */
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .filter-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      /* Traffic light pills for both timer and difficulty */
+      .traffic-pills {
+        display: flex;
+        gap: 4px;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 20px;
+        transition: background 0.2s ease;
+        align-items: center;
+      }
+
+      .traffic-pills:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      .pill {
+        width: 20px;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--gray);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+      }
+
+      /* Timer states */
+      .traffic-pills[data-level="green"] .pill:nth-child(1) {
+        background: var(--green);
+        box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+      }
+
+      .traffic-pills[data-level="orange"] .pill:nth-child(1) {
+        background: var(--green);
+      }
+
+      .traffic-pills[data-level="orange"] .pill:nth-child(2) {
+        background: var(--orange);
+        box-shadow: 0 0 8px rgba(251, 146, 60, 0.4);
+      }
+
+      /* Difficulty states - now with 3 pills */
+      .traffic-pills[data-level="red"] .pill:nth-child(1) {
+        background: var(--green);
+      }
+
+      .traffic-pills[data-level="red"] .pill:nth-child(2) {
+        background: var(--orange);
+      }
+
+      .traffic-pills[data-level="red"] .pill:nth-child(3) {
+        background: var(--red);
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+      }
+
+      /* Remove old timer-clock and difficulty-pills styles */
+      .timer-clock,
+      .clock-face,
+      .clock-center,
+      .clock-hand,
+      .minute-hand,
+      .hour-hand,
+      .difficulty-pills {
+        /* These are being replaced */
+      }
+
+      /* Random Toggle */
+      .random-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: var(--bg);
+        border: 2px solid var(--border);
+        border-radius: 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        user-select: none;
+      }
+
+      .random-toggle:hover {
+        border-color: var(--accent);
+        background: rgba(0, 0, 0, 0.02);
+      }
+
+      .random-toggle.active {
+        background: var(--fg);
+        color: var(--bg);
+        border-color: var(--fg);
+      }
+
+      .random-icon {
         width: 20px;
         height: 20px;
-        background: #fff;
-        border-radius: 999px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .switch.on {
-        background: #e5e7eb;
+      .random-icon svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
-      .switch.on .knob {
-        left: 19px;
+      .random-toggle.active .random-icon svg {
+        transform: rotate(180deg);
       }
 
-      .meta {
-        margin-top: 6px;
+      .random-label {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* Counter */
+      .counter {
+        margin-top: 16px;
+        text-align: center;
+        font-size: 14px;
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      /* Footer - scrollable below 100vh */
+      .footer-section {
+        background: var(--bg);
+        border-top: 1px solid var(--border);
+        padding: 40px 20px;
+        min-height: 200px;
+      }
+
+      .footer-content {
+        max-width: 800px;
+        margin: 0 auto;
         text-align: center;
         color: var(--muted);
         font-size: 14px;
-        transition: opacity 0.2s ease;
       }
 
-      footer {
-        padding: 14px;
-        text-align: center;
-        color: var(--muted);
-        font-size: 13px;
+      /* Responsive */
+      @media (max-width: 640px) {
+        .header-content {
+          flex-direction: column;
+          align-items: stretch;
+          text-align: center;
+        }
+
+        h1 {
+          justify-content: center;
+        }
+
+        .filter-controls {
+          gap: 20px;
+        }
+
+        .nav-buttons {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
       }
 
-      a {
-        color: inherit;
+      /* Swap order only when width <= 507px
+         so Retourner drops below while Prev/Next stay together */
+      @media (max-width: 507px) {
+        #prevBtn {
+          order: 1;
+        }
+        #nextBtn {
+          order: 2;
+        }
+        #flipBtn {
+          order: 3;
+        }
       }
 
+      /* Hidden utility */
       .hidden {
         display: none !important;
       }
@@ -358,67 +615,155 @@
     </style>
   </head>
   <body>
-    <header>
-      <h1>
-        Cartes mémoire physique
-        <select id="chapterSelect" aria-label="Choisir un chapitre">
-          <!-- options générées dynamiquement -->
-        </select>
-      </h1>
-      <div class="sub">
-        Cliquez sur la carte pour la retourner. Utilisez ← / → pour naviguer,
-        barre d'espace pour retourner.
-      </div>
-    </header>
+    <div class="app-container">
+      <header>
+        <div class="header-content">
+          <h1>
+            Cartes mémoire
+            <select
+              id="chapterSelect"
+              class="chapter-select"
+              aria-label="Choisir un chapitre"
+            >
+              <!-- options générées dynamiquement -->
+            </select>
+          </h1>
+          <p class="help-text">← / → naviguer • Espace retourner</p>
+        </div>
+      </header>
 
-    <main class="wrap">
-      <section class="stage" id="stage" aria-label="Carte mémoire">
-        <div class="skeleton-card" id="skeleton"></div>
-        <div class="card-shell" id="cardShell">
-          <div
-            class="card3d"
-            id="card3d"
-            aria-live="polite"
-            tabindex="0"
-            role="button"
-            aria-pressed="false"
-          >
-            <div class="face front">
-              <img id="frontImg" alt="Recto de la carte" draggable="false" />
-            </div>
-            <div class="face back">
-              <img id="backImg" alt="Verso de la carte" draggable="false" />
+      <main class="main-content">
+        <section class="stage" id="stage" aria-label="Carte mémoire">
+          <div class="skeleton-card" id="skeleton"></div>
+          <div class="card-shell" id="cardShell">
+            <div
+              class="card3d"
+              id="card3d"
+              aria-live="polite"
+              tabindex="0"
+              role="button"
+              aria-pressed="false"
+            >
+              <div class="face front">
+                <img id="frontImg" alt="Recto de la carte" draggable="false" />
+              </div>
+              <div class="face back">
+                <img id="backImg" alt="Verso de la carte" draggable="false" />
+              </div>
             </div>
           </div>
+        </section>
+
+        <div class="controls-wrapper">
+          <div class="controls">
+            <div class="nav-buttons">
+              <button
+                id="prevBtn"
+                class="btn secondary"
+                title="Carte précédente (←)"
+              >
+                <svg class="btn-icon" viewBox="0 0 24 24">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+                Précédent
+              </button>
+
+              <button
+                id="flipBtn"
+                class="btn btn-flip"
+                title="Retourner la carte (Espace)"
+              >
+                Retourner
+              </button>
+
+              <button
+                id="nextBtn"
+                class="btn secondary"
+                title="Carte suivante (→)"
+              >
+                Suivant
+                <svg class="btn-icon" viewBox="0 0 24 24">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="filter-controls">
+              <div class="filter-group">
+                <span class="filter-label">Timer</span>
+                <div
+                  class="traffic-pills"
+                  id="timerFilter"
+                  data-level="all"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Filtre timer"
+                >
+                  <div class="pill"></div>
+                  <div class="pill"></div>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <span class="filter-label">Difficulté</span>
+                <div
+                  class="traffic-pills"
+                  id="difficultyFilter"
+                  data-level="all"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Filtre difficulté"
+                >
+                  <div class="pill"></div>
+                  <div class="pill"></div>
+                  <div class="pill"></div>
+                </div>
+              </div>
+
+              <div
+                class="random-toggle"
+                id="randomToggle"
+                role="switch"
+                aria-checked="false"
+                tabindex="0"
+              >
+                <div class="random-icon">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+                    <path
+                      d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"
+                    />
+                    <path d="M6 18h.01" />
+                    <path d="M10 14h.01" />
+                    <path d="M15 6h.01" />
+                    <path d="M18 9h.01" />
+                  </svg>
+                </div>
+                <span class="random-label">Aléatoire</span>
+              </div>
+            </div>
+
+            <div class="counter" id="counter">Chargement…</div>
+          </div>
         </div>
-      </section>
+      </main>
+    </div>
 
-      <div class="controls">
-        <button id="prevBtn" class="secondary" title="Précédent (←)">
-          ← Précédent
-        </button>
-        <button id="flipBtn" title="Retourner (espace)">Retourner</button>
-        <button id="nextBtn" class="secondary" title="Suivant (→)">
-          Suivant →
-        </button>
-
-        <label class="toggle" title="Activer/désactiver l'ordre aléatoire">
-          <span>Aléatoire</span>
-          <span
-            class="switch"
-            id="shuffleSwitch"
-            role="switch"
-            aria-checked="false"
-            tabindex="0"
-          >
-            <span class="knob"></span>
-          </span>
-        </label>
+    <footer class="footer-section">
+      <div class="footer-content">
+        <!-- Votre contenu footer ici -->
       </div>
-      <div class="meta" id="counter">Chargement…</div>
-    </main>
-
-    <footer></footer>
+    </footer>
 
     <script>
       /* ==========================
@@ -429,7 +774,7 @@
       const CHAPTER_SUFFIX = "_cartes";
       const MAX_CHAPTERS_PROBE = 20;
       const MAX_PROBE = 100;
-      const PRELOAD_RADIUS = 2; // Only preload ±2 cards around current
+      const PRELOAD_RADIUS = 2;
 
       /* ===== Helpers ===== */
       const qs = (s, el = document) => el.querySelector(s);
@@ -439,17 +784,14 @@
       const loadingImages = new Map();
 
       function loadImage(url, useCache = true) {
-        // Return cached promise if available
         if (useCache && imageCache.has(url)) {
           return Promise.resolve(imageCache.get(url));
         }
 
-        // Return existing loading promise if in progress
         if (loadingImages.has(url)) {
           return loadingImages.get(url);
         }
 
-        // Create new loading promise
         const promise = new Promise((resolve) => {
           const img = new Image();
           img.onload = () => {
@@ -475,7 +817,6 @@
         return promise;
       }
 
-      // Only use cache-busting for discovery
       function probeImage(url) {
         return loadImage(url + "?probe=" + Date.now(), false);
       }
@@ -503,9 +844,14 @@
         isTransitioning: false,
         imagesLoaded: new Set(),
         manifest: null,
+        filterTimer: localStorage.getItem("fc_filter_timer") || "all",
+        filterDifficulty: localStorage.getItem("fc_filter_diff") || "all",
       };
 
-      // Skeleton loader management
+      // Timer states cycle
+      const timerStates = ["all", "green", "orange"];
+      const difficultyStates = ["all", "green", "orange", "red"];
+
       function showSkeleton() {
         const skeleton = qs("#skeleton");
         skeleton.classList.add("visible");
@@ -520,7 +866,6 @@
         if (CHAPTERS_MANUAL.length) return CHAPTERS_MANUAL.slice();
         const found = [];
 
-        // Parallel discovery with batching
         const batchSize = 5;
         for (let start = 1; start <= MAX_CHAPTERS_PROBE; start += batchSize) {
           const batch = [];
@@ -536,7 +881,6 @@
           const validChapters = results.filter((n) => n !== null);
           found.push(...validChapters);
 
-          // Stop if we found a gap
           if (validChapters.length < batch.length) break;
         }
 
@@ -558,7 +902,6 @@
           const data = await res.json();
           state.manifest = data;
         } catch (_) {
-          // Manifest is optional; ignore failures
           state.manifest = null;
         }
       }
@@ -575,7 +918,6 @@
         const total = await discoverPairs();
         state.total = total;
 
-        // Try to load optional manifest for filtering
         await loadManifest();
 
         if (!total) {
@@ -583,6 +925,7 @@
           qs(
             "#counter"
           ).textContent = `Aucune image de carte trouvée dans "${state.basePath}".`;
+          updateNavButtons();
           return;
         }
 
@@ -590,6 +933,7 @@
         if (!state.deck.length) {
           hideSkeleton();
           qs("#counter").textContent = "Aucune carte disponible.";
+          updateNavButtons();
           return;
         }
         await showCurrent();
@@ -615,7 +959,6 @@
       }
 
       async function discoverPairs() {
-        // Binary search for finding the last valid card
         let left = 1,
           right = MAX_PROBE,
           lastValid = 0;
@@ -636,7 +979,6 @@
           }
         }
 
-        // Fill in any gaps in the range [1, lastValid]
         if (lastValid > 0) {
           const checks = [];
           for (let k = 1; k <= lastValid; k++) {
@@ -660,7 +1002,6 @@
         const { total, manifest } = state;
         let newDeck = Array.from({ length: total }, (_, i) => i + 1);
 
-        // Exclude purple-tagged cards if manifest available
         if (manifest) {
           const purple = new Set();
           if (manifest.per_card && typeof manifest.per_card === "object") {
@@ -677,6 +1018,56 @@
           }
           if (purple.size) {
             newDeck = newDeck.filter((n) => !purple.has(n));
+          }
+
+          const tf = state.filterTimer;
+          if (tf && tf !== "all") {
+            const allowedTimer = new Set();
+            if (
+              manifest.cards_by_timer &&
+              Array.isArray(manifest.cards_by_timer[tf])
+            ) {
+              manifest.cards_by_timer[tf].forEach((n) =>
+                allowedTimer.add(parseInt(n, 10))
+              );
+            } else if (
+              manifest.per_card &&
+              typeof manifest.per_card === "object"
+            ) {
+              for (const [k, v] of Object.entries(manifest.per_card)) {
+                if (v && v.timer === tf) allowedTimer.add(parseInt(k, 10));
+              }
+            }
+            if (allowedTimer.size) {
+              newDeck = newDeck.filter((n) => allowedTimer.has(n));
+            } else {
+              newDeck = [];
+            }
+          }
+
+          const df = state.filterDifficulty;
+          if (df && df !== "all") {
+            const allowedBorder = new Set();
+            if (
+              manifest.cards_by_border &&
+              Array.isArray(manifest.cards_by_border[df])
+            ) {
+              manifest.cards_by_border[df].forEach((n) =>
+                allowedBorder.add(parseInt(n, 10))
+              );
+            } else if (
+              manifest.per_card &&
+              typeof manifest.per_card === "object"
+            ) {
+              for (const [k, v] of Object.entries(manifest.per_card)) {
+                if (v && v.border === df) allowedBorder.add(parseInt(k, 10));
+              }
+            }
+            if (allowedBorder.size) {
+              newDeck = newDeck.filter((n) => allowedBorder.has(n));
+            } else {
+              newDeck = [];
+            }
           }
         }
 
@@ -699,10 +1090,8 @@
           el.textContent = "Aucune image trouvée.";
           return;
         }
-        const n = state.deck[state.i];
-        el.textContent = `Carte ${n} sur ${state.deck.length} ${
-          state.shuffle ? "(aléatoire)" : ""
-        }`;
+        const position = Math.min(state.i + 1, state.deck.length);
+        el.textContent = `Carte ${position} sur ${state.deck.length}`;
       }
 
       function setFlipped(on) {
@@ -716,8 +1105,9 @@
 
       function sizeStageForImage(naturalW, naturalH) {
         const stage = qs("#stage");
-        const maxWidth = Math.min(window.innerWidth * 0.92, 1000);
-        const maxHeight = window.innerHeight * 0.7;
+        const maxWidth = Math.min(window.innerWidth * 0.9, 900);
+        const availableHeight = window.innerHeight - 300; // Leave room for controls
+        const maxHeight = Math.max(availableHeight, 200);
 
         const widthByHeight = maxHeight * (naturalW / naturalH);
         const finalWidth = Math.min(maxWidth, widthByHeight);
@@ -761,7 +1151,6 @@
         const frontImg = qs("#frontImg");
         const backImg = qs("#backImg");
 
-        // Show skeleton immediately if images not loaded
         const isFirstLoad = !state.imagesLoaded.has(n);
         if (isFirstLoad) {
           showSkeleton();
@@ -769,32 +1158,27 @@
 
         state.isTransitioning = true;
 
-        // Helper to swap images while hidden
         const swapImages = async () => {
           if (state.flipped) {
             card3d.classList.add("no-anim");
             card3d.classList.remove("flipped", "flipping");
             card3d.setAttribute("aria-pressed", "false");
             state.flipped = false;
-            void card3d.offsetHeight; // flush
+            void card3d.offsetHeight;
             card3d.classList.remove("no-anim");
           }
 
-          // Reset image loaded state (keep hidden until ready)
           frontImg.classList.remove("loaded");
           backImg.classList.remove("loaded");
 
-          // Load images in parallel
           const [front, back] = await Promise.all([
             loadImage(frontURL(n)),
             loadImage(backURL(n)),
           ]);
 
-          // Update sources
           frontImg.src = front.src;
           backImg.src = back.src;
 
-          // Wait for ready-to-paint; try decode() first, fallback to onload
           try {
             if (frontImg.decode && backImg.decode) {
               await Promise.all([frontImg.decode(), backImg.decode()]);
@@ -811,7 +1195,6 @@
               ]);
             }
           } catch (_) {
-            // Fallback: ensure at least load events have fired
             await Promise.all([
               new Promise((resolve) => {
                 if (frontImg.complete) resolve();
@@ -831,42 +1214,41 @@
           updateCounter();
         };
 
-        // No animation case (initial load or programmatic)
         if (direction === "none") {
           await swapImages();
+          updateNavButtons();
           state.isTransitioning = false;
           preloadNearbyCards();
           return;
         }
 
-        // Determine classes for out/in phases
-        // Next: slide old left, bring new from right. Prev: opposite.
         const outClass = direction === "next" ? "out-left" : "out-right";
         const outName = direction === "next" ? "outLeft" : "outRight";
         const inClass = direction === "next" ? "in-right" : "in-left";
         const inName = direction === "next" ? "inRight" : "inLeft";
 
-        // Clean previous animation classes, if any
-        cardShell.classList.remove("out-left", "out-right", "in-left", "in-right");
-        void cardShell.offsetWidth; // flush
+        cardShell.classList.remove(
+          "out-left",
+          "out-right",
+          "in-left",
+          "in-right"
+        );
+        void cardShell.offsetWidth;
 
-        // Phase 1: animate out to fully hidden
         cardShell.classList.add(outClass);
         await waitAnimationEnd(cardShell, outName, 400);
 
-        // Swap content while hidden
         await swapImages();
 
-        // Phase 2: animate in to visible
         cardShell.classList.remove(outClass);
-        void cardShell.offsetWidth; // flush
+        void cardShell.offsetWidth;
         cardShell.classList.add(inClass);
         await waitAnimationEnd(cardShell, inName, 500);
         cardShell.classList.remove(inClass);
 
         state.isTransitioning = false;
+        updateNavButtons();
 
-        // Smart preloading: only preload nearby cards
         preloadNearbyCards();
       }
 
@@ -881,11 +1263,9 @@
           );
         }
 
-        // Preload in background without blocking
         preloadIndices.forEach((idx) => {
           const k = deck[idx];
           if (k && !state.imagesLoaded.has(k)) {
-            // Use requestIdleCallback for non-blocking preload
             if ("requestIdleCallback" in window) {
               requestIdleCallback(
                 () => {
@@ -906,12 +1286,14 @@
 
       function nextCard() {
         if (state.isTransitioning) return;
+        if (!state.deck.length || state.deck.length === 1) return;
         state.i = (state.i + 1) % state.deck.length;
         showCurrent("next");
       }
 
       function prevCard() {
         if (state.isTransitioning) return;
+        if (!state.deck.length || state.deck.length === 1) return;
         state.i = (state.i - 1 + state.deck.length) % state.deck.length;
         showCurrent("prev");
       }
@@ -926,9 +1308,65 @@
       }
 
       function updateShuffleUI() {
-        const sw = qs("#shuffleSwitch");
-        sw.classList.toggle("on", state.shuffle);
-        sw.setAttribute("aria-checked", String(state.shuffle));
+        const toggle = qs("#randomToggle");
+        toggle.classList.toggle("active", state.shuffle);
+        toggle.setAttribute("aria-checked", String(state.shuffle));
+      }
+
+      function updateNavButtons() {
+        const disable = state.deck.length <= 1;
+        const prev = qs("#prevBtn");
+        const next = qs("#nextBtn");
+        if (prev) prev.disabled = disable;
+        if (next) next.disabled = disable;
+      }
+
+      function cycleTimer() {
+        const currentIndex = timerStates.indexOf(state.filterTimer);
+        const nextIndex = (currentIndex + 1) % timerStates.length;
+        state.filterTimer = timerStates[nextIndex];
+        localStorage.setItem("fc_filter_timer", state.filterTimer);
+        updateTimerUI();
+
+        const keep = state.deck[state.i];
+        rebuildDeck(keep);
+        if (!state.deck.length) {
+          qs("#counter").textContent =
+            "Aucune carte disponible pour ce filtre.";
+          hideSkeleton();
+          updateNavButtons();
+          return;
+        }
+        showCurrent();
+      }
+
+      function updateTimerUI() {
+        const pills = qs("#timerFilter");
+        pills.setAttribute("data-level", state.filterTimer);
+      }
+
+      function cycleDifficulty() {
+        const currentIndex = difficultyStates.indexOf(state.filterDifficulty);
+        const nextIndex = (currentIndex + 1) % difficultyStates.length;
+        state.filterDifficulty = difficultyStates[nextIndex];
+        localStorage.setItem("fc_filter_diff", state.filterDifficulty);
+        updateDifficultyUI();
+
+        const keep = state.deck[state.i];
+        rebuildDeck(keep);
+        if (!state.deck.length) {
+          qs("#counter").textContent =
+            "Aucune carte disponible pour ce filtre.";
+          hideSkeleton();
+          updateNavButtons();
+          return;
+        }
+        showCurrent();
+      }
+
+      function updateDifficultyUI() {
+        const pills = qs("#difficultyFilter");
+        pills.setAttribute("data-level", state.filterDifficulty);
       }
 
       function bindUI() {
@@ -938,24 +1376,64 @@
             setFlipped(!state.flipped);
           }
         });
+
         qs("#flipBtn").addEventListener("click", () => {
           if (!state.isTransitioning) {
             setFlipped(!state.flipped);
           }
         });
+
         qs("#nextBtn").addEventListener("click", nextCard);
         qs("#prevBtn").addEventListener("click", prevCard);
 
-        const sw = qs("#shuffleSwitch");
-        const toggler = () => toggleShuffle();
-        sw.addEventListener("click", toggler);
-        sw.addEventListener("keydown", (e) => {
+        // Random toggle
+        const randomToggle = qs("#randomToggle");
+        randomToggle.addEventListener("click", toggleShuffle);
+        randomToggle.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            toggler();
+            toggleShuffle();
           }
         });
 
+        // Timer filter
+        const timerFilter = qs("#timerFilter");
+        timerFilter.addEventListener("click", cycleTimer);
+        // Also allow clicking the whole group (incl. label)
+        const timerGroup = timerFilter ? timerFilter.closest('.filter-group') : null;
+        if (timerGroup) {
+          timerGroup.addEventListener('click', (e) => {
+            // Avoid double-trigger when clicking directly on the pills
+            if (timerFilter.contains(e.target)) return;
+            cycleTimer();
+          });
+        }
+        timerFilter.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            cycleTimer();
+          }
+        });
+
+        // Difficulty filter
+        const diffFilter = qs("#difficultyFilter");
+        diffFilter.addEventListener("click", cycleDifficulty);
+        // Also allow clicking the whole group (incl. label)
+        const diffGroup = diffFilter ? diffFilter.closest('.filter-group') : null;
+        if (diffGroup) {
+          diffGroup.addEventListener('click', (e) => {
+            if (diffFilter.contains(e.target)) return;
+            cycleDifficulty();
+          });
+        }
+        diffFilter.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            cycleDifficulty();
+          }
+        });
+
+        // Keyboard shortcuts
         window.addEventListener("keydown", (e) => {
           if (
             e.target &&
@@ -986,9 +1464,27 @@
         });
       }
 
+      // Sanitize stored filter values
+      function sanitizeFilters() {
+        const allowedTimers = new Set(["all", "green", "orange"]);
+        if (!allowedTimers.has(state.filterTimer)) {
+          state.filterTimer = "all";
+          localStorage.setItem("fc_filter_timer", state.filterTimer);
+        }
+
+        const allowedDifficulties = new Set(["all", "green", "orange", "red"]);
+        if (!allowedDifficulties.has(state.filterDifficulty)) {
+          state.filterDifficulty = "all";
+          localStorage.setItem("fc_filter_diff", state.filterDifficulty);
+        }
+      }
+
       (async function init() {
+        sanitizeFilters();
         bindUI();
         updateShuffleUI();
+        updateTimerUI();
+        updateDifficultyUI();
 
         showSkeleton();
         const chapters = await discoverChapters();
