@@ -1933,16 +1933,10 @@
           }
         });
 
-        // Debounced resize handler
-        let resizeTimeout;
-        window.addEventListener("resize", () => {
-          clearTimeout(resizeTimeout);
-          resizeTimeout = setTimeout(() => {
-            const n = state.deck[state.i];
-            const size = state.sizes[n];
-            if (size) sizeStageForImage(size.w, size.h);
-          }, 100);
-        });
+        // Freeze layout after initial render: do not respond to resize/zoom.
+        // Intentionally disable dynamic resizing so zooming does not change layout.
+        // If adaptive behavior is needed later, re-enable with care.
+        // window.addEventListener("resize", () => { /* disabled on purpose */ });
       }
 
       // Sanitize stored filter values
