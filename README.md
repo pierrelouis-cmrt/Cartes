@@ -2,7 +2,7 @@
 
 [capecl.fr/cartes](https://capecl.fr/cartes)
 
-Flashcards Physique CapECL
+Flashcards CapECL
 
 ---
 
