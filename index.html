@@ -6,12 +6,13 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
-    <!-- Disable browser auto-translation and lock light mode -->
+    <!-- Disable browser auto-translation and support system color scheme -->
     <meta name="google" content="notranslate" />
     <meta http-equiv="Content-Language" content="fr" />
-    <meta name="color-scheme" content="light" />
-    <meta name="supported-color-schemes" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
     <title>Cartes mémoire physique</title>
     <link rel="preconnect" href="https://cloud.umami.is" crossorigin />
     <script
@@ -33,12 +34,13 @@
     </script>
     <style>
       :root {
-        /* Prevent UA auto-darkening of built-in controls */
-        color-scheme: light;
+        /* Allow UA to style built-in controls appropriately */
+        color-scheme: light dark;
+        /* Base (light) theme */
         --bg: #ffffff;
         --fg: #0f0f0f;
         --muted: #6b7280;
-        --accent: #111827;
+        --accent: #111827; /* used for highlights and fills */
         --btn: #0f0f0f;
         --btn-fg: #ffffff;
         --btn-hover: #2a2a2a;
@@ -53,6 +55,34 @@
         --orange: #fb923c;
         --red: #ef4444;
         --gray: #d1d5db;
+        /* UI overlays */
+        --glass: rgba(249, 250, 251, 0.7);
+        --hover-bg: rgba(0, 0, 0, 0.04);
+        --pill-bg: rgba(0, 0, 0, 0.03);
+        --pill-border: rgba(0, 0, 0, 0.06);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b0f14;         /* near black with slight blue */
+          --fg: #e6e8ee;         /* light foreground */
+          --muted: #9aa3b2;      /* muted text */
+          --accent: #cbd5e1;     /* slate-300 like */
+          --btn: #e5e7eb;        /* light button */
+          --btn-fg: #0f1117;     /* dark text on light button */
+          --btn-hover: #cfd3d8;  /* slightly darker on hover */
+          --border: #1f2937;     /* slate-800 border */
+          --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.55);
+          --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.6);
+          --skeleton-bg: #111418;
+          --skeleton-shine: #1a1f26;
+          --gray: #374151;
+          --glass: rgba(11, 15, 20, 0.6);
+          --hover-bg: rgba(255, 255, 255, 0.06);
+          --pill-bg: rgba(255, 255, 255, 0.03);
+          --pill-border: rgba(255, 255, 255, 0.08);
+        }
       }
 
       html {
@@ -85,11 +115,7 @@
       header {
         padding: 0;
         border-bottom: 1px solid var(--border);
-        background: linear-gradient(
-          to bottom,
-          var(--bg) 0%,
-          rgba(249, 250, 251, 0.7) 100%
-        );
+        background: linear-gradient(to bottom, var(--bg) 0%, var(--glass) 100%);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         position: relative;
@@ -137,12 +163,8 @@
       /* Chapter selector - more refined */
       .chapter-select {
         appearance: none;
-        background: linear-gradient(
-          135deg,
-          var(--bg) 0%,
-          rgba(249, 250, 251, 0.8) 100%
-        );
-        border: 1.5px solid rgba(17, 24, 39, 0.12);
+        background: linear-gradient(135deg, var(--bg) 0%, var(--glass) 100%);
+        border: 1.5px solid var(--border);
         padding: 7px 34px 7px 13px;
         border-radius: 10px;
         font-size: 14px;
@@ -539,7 +561,7 @@
       }
 
       .filter-group:hover .traffic-pills {
-        background: rgba(0, 0, 0, 0.04);
+        background: var(--hover-bg);
       }
 
       .pill {
@@ -599,7 +621,7 @@
 
       .random-toggle:hover {
         border-color: var(--accent);
-        background: rgba(0, 0, 0, 0.02);
+        background: var(--hover-bg);
       }
 
       .random-toggle.active {
@@ -735,11 +757,7 @@
       .footer-section {
         border-top: 1px solid var(--border);
         /* Match header's background styling for consistency */
-        background: linear-gradient(
-          to top,
-          var(--bg) 0%,
-          rgba(249, 250, 251, 0.7) 100%
-        );
+        background: linear-gradient(to top, var(--bg) 0%, var(--glass) 100%);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         position: relative;
@@ -776,9 +794,9 @@
         align-items: center;
         gap: 6px;
         padding: 6px;
-        background: rgba(0, 0, 0, 0.03);
+        background: var(--pill-bg);
         border-radius: 14px;
-        border: 1px solid rgba(0, 0, 0, 0.06);
+        border: 1px solid var(--pill-border);
       }
 
       .icon-btn {
@@ -911,7 +929,7 @@
 
         .footer-actions {
           order: 2;
-          background: rgba(0, 0, 0, 0.02);
+          background: var(--pill-bg);
           padding: 4px;
         }
 
