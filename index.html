@@ -60,6 +60,8 @@
         --hover-bg: rgba(0, 0, 0, 0.04);
         --pill-bg: rgba(0, 0, 0, 0.03);
         --pill-border: rgba(0, 0, 0, 0.06);
+        /* Card image filter (none for light mode) */
+        --card-img-filter: none;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -82,6 +84,8 @@
           --hover-bg: rgba(255, 255, 255, 0.06);
           --pill-bg: rgba(255, 255, 255, 0.03);
           --pill-border: rgba(255, 255, 255, 0.08);
+          /* Slightly dim card images to ease eye strain */
+          --card-img-filter: brightness(0.9) saturate(0.96);
         }
       }
 
@@ -413,7 +417,9 @@
         object-fit: contain;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 0.2s ease-out;
+        /* Smoothly apply dark-mode filter */
+        transition: opacity 0.2s ease-out, filter 0.2s ease-out;
+        filter: var(--card-img-filter);
         will-change: opacity;
       }
 
