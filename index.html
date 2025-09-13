@@ -2,7 +2,10 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <title>Cartes mémoire physique</title>
     <link rel="preconnect" href="https://cloud.umami.is" crossorigin />
     <script
@@ -10,6 +13,18 @@
       src="https://cloud.umami.is/script.js"
       data-website-id="a052a820-83ee-48c6-bf8a-9b3c2b3a8fd3"
     ></script>
+    <script>
+      // Detect touch-capable devices early and flag the document
+      (function () {
+        try {
+          var isTouch =
+            "ontouchstart" in window ||
+            navigator.maxTouchPoints > 0 ||
+            navigator.msMaxTouchPoints > 0;
+          if (isTouch) document.documentElement.classList.add("is-touch");
+        } catch (_) {}
+      })();
+    </script>
     <style>
       :root {
         --bg: #ffffff;
@@ -30,6 +45,11 @@
         --orange: #fb923c;
         --red: #ef4444;
         --gray: #d1d5db;
+      }
+
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
 
       * {
@@ -55,15 +75,39 @@
 
       /* Header */
       header {
-        padding: 20px 24px 12px;
+        padding: 0;
         border-bottom: 1px solid var(--border);
-        background: var(--bg);
+        background: linear-gradient(
+          to bottom,
+          var(--bg) 0%,
+          rgba(249, 250, 251, 0.7) 100%
+        );
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        position: relative;
         z-index: 10;
+      }
+
+      header::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(17, 24, 39, 0.1) 20%,
+          rgba(17, 24, 39, 0.1) 80%,
+          transparent 100%
+        );
       }
 
       .header-content {
         max-width: 1200px;
         margin: 0 auto;
+        padding: 18px 24px 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -72,44 +116,86 @@
       }
 
       h1 {
-        font-size: 20px;
+        font-size: 19px;
         font-weight: 600;
         margin: 0;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 14px;
+        color: var(--fg);
+        letter-spacing: -0.3px;
       }
 
-      /* Chapter selector - styled as minimal dropdown */
+      /* Chapter selector - more refined */
       .chapter-select {
         appearance: none;
-        background: var(--bg);
-        border: 2px solid var(--border);
-        padding: 6px 32px 6px 12px;
-        border-radius: 8px;
+        background: linear-gradient(
+          135deg,
+          var(--bg) 0%,
+          rgba(249, 250, 251, 0.8) 100%
+        );
+        border: 1.5px solid rgba(17, 24, 39, 0.12);
+        padding: 7px 34px 7px 13px;
+        border-radius: 10px;
         font-size: 14px;
         font-weight: 500;
+        color: var(--fg);
         cursor: pointer;
-        transition: all 0.2s ease;
-        background-image: url("data:image/svg+xml,%3Csvg width='12' height='7' viewBox='0 0 12 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23111827' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 10px center;
+        background-position: right 12px center;
+        background-size: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
       }
 
       .chapter-select:hover {
         border-color: var(--accent);
+        background: var(--bg);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-1px);
       }
 
       .chapter-select:focus {
         outline: none;
         border-color: var(--accent);
-        box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+        box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08),
+          0 2px 8px rgba(0, 0, 0, 0.06);
       }
 
       .help-text {
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
         margin: 0;
+        padding: 4px 12px;
+        background: rgba(107, 114, 128, 0.06);
+        border-radius: 20px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+      }
+
+      /* Hide keyboard help on touch devices */
+      .is-touch .help-text {
+        display: none !important;
+      }
+
+      @media (max-width: 640px) {
+        .header-content {
+          padding: 14px 20px;
+        }
+
+        h1 {
+          font-size: 17px;
+          flex: 1 0 100%;
+        }
+
+        .help-text {
+          font-size: 11px;
+          padding: 3px 10px;
+        }
       }
 
       /* Main content area */
@@ -257,14 +343,13 @@
         transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         transform: rotateY(0deg);
         will-change: transform;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
       }
 
       .card3d.no-anim {
         transition: none !important;
-      }
-
-      .card3d.flipping {
-        /* No shadow during flip */
       }
 
       .card3d.flipped {
@@ -335,7 +420,7 @@
         color: var(--btn-fg);
         padding: 12px 24px;
         border-radius: var(--radius);
-        font-size: 14px;
+        font-size: 16px; /* Avoid iOS zoom on tap */
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -344,6 +429,11 @@
         gap: 8px;
         position: relative;
         overflow: hidden;
+        min-height: 44px; /* Apple HIG minimum tap target */
+        min-width: 44px;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation; /* Prevent double-tap zoom */
       }
 
       .btn:hover:not(:disabled) {
@@ -375,8 +465,8 @@
       }
 
       .btn-icon {
-        width: 16px;
-        height: 16px;
+        width: 18px;
+        height: 18px;
         fill: none;
         stroke: currentColor;
         stroke-width: 2;
@@ -414,6 +504,8 @@
         user-select: none;
         /* Remove mobile tap highlight */
         -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
       }
 
       .filter-label {
@@ -433,9 +525,12 @@
         border-radius: 20px;
         transition: background 0.2s ease;
         align-items: center;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
       }
 
-      .traffic-pills:hover {
+      .filter-group:hover .traffic-pills {
         background: rgba(0, 0, 0, 0.04);
       }
 
@@ -477,17 +572,6 @@
         box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
       }
 
-      /* Remove old timer-clock and difficulty-pills styles */
-      .timer-clock,
-      .clock-face,
-      .clock-center,
-      .clock-hand,
-      .minute-hand,
-      .hour-hand,
-      .difficulty-pills {
-        /* These are being replaced */
-      }
-
       /* Random Toggle */
       .random-toggle {
         display: flex;
@@ -500,6 +584,9 @@
         cursor: pointer;
         transition: all 0.3s ease;
         user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
       }
 
       .random-toggle:hover {
@@ -579,27 +666,50 @@
         }
 
         .filter-controls {
-          gap: 20px;
+          gap: 10px;
         }
 
         .nav-buttons {
           flex-wrap: wrap;
           justify-content: center;
         }
-
       }
 
-      /* Swap order only when width <= 507px
-         so Retourner drops below while Prev/Next stay together */
-      @media (max-width: 507px) {
-        #prevBtn {
-          order: 1;
+      /* Small screens: keep button order, hide Prev/Next text */
+      @media (max-width: 535px) {
+        #prevBtn .btn-text,
+        #nextBtn .btn-text {
+          display: none;
         }
-        #nextBtn {
-          order: 2;
+        .nav-buttons .btn {
+          padding: 12px; /* compact but tappable */
+        }
+        .random-label {
+          display: none;
+        }
+      }
+
+      /* Ultra-small screens: icon-only flip button */
+      #flipBtn .btn-icon-flip {
+        display: none;
+      }
+
+      @media (max-width: 328px) {
+        .filter-controls {
+          gap: 0;
+        }
+        .filter-group {
+          padding: 3px;
+        }
+        #flipBtn .btn-text {
+          display: none;
+        }
+        #flipBtn .btn-icon-flip {
+          display: inline-block;
         }
         #flipBtn {
-          order: 3;
+          padding-left: 36px;
+          padding-right: 36px;
         }
       }
 
@@ -611,6 +721,224 @@
       .sr-only {
         position: absolute;
         left: -9999px;
+      }
+
+      /* Footer - Design créatif et moderne */
+      .footer-section {
+        border-top: 1px solid var(--border);
+        /* Match header's background styling for consistency */
+        background: linear-gradient(
+          to top,
+          var(--bg) 0%,
+          rgba(249, 250, 251, 0.7) 100%
+        );
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* (removed) Effet de gradient animé subtil */
+
+      @keyframes footerGlow {
+        0% {
+          transform: translate(0, 0) scale(1);
+        }
+        100% {
+          transform: translate(10%, -10%) scale(1.1);
+        }
+      }
+
+      .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Boutons à gauche avec un style pill */
+      .footer-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 14px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+      }
+
+      .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: none;
+        color: var(--muted);
+        background: transparent;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .icon-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .icon-btn:hover {
+        color: var(--btn-fg);
+      }
+
+      .icon-btn:hover::before {
+        opacity: 1;
+      }
+
+      .icon-btn:active {
+        transform: scale(0.96);
+      }
+
+      .icon-btn svg,
+      .icon-btn-text {
+        position: relative;
+        z-index: 1;
+      }
+
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+
+      .icon-btn-text {
+        display: none;
+      }
+
+      /* Texte du footer avec un design distinctif */
+      .footer-text {
+        flex: 1;
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.7;
+        text-align: left;
+        position: relative;
+        padding: 0 16px;
+        max-width: 600px;
+      }
+
+      /* Style pour les liens en inline */
+      .footer-text a {
+        color: var(--fg);
+        text-decoration: none;
+        font-weight: 500;
+        position: relative;
+        transition: color 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .footer-text a::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: var(--accent);
+        transform: scaleX(0);
+        transform-origin: right;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .footer-text a:hover {
+        color: var(--accent);
+      }
+
+      .footer-text a:hover::after {
+        transform: scaleX(1);
+        transform-origin: left;
+      }
+
+      /* (removed) Divider dots entre les éléments */
+
+      /* Alternative: Layout vertical centré */
+      @media (min-width: 641px) {
+        .icon-btn-text {
+          display: inline;
+        }
+
+        .footer-content {
+          min-height: 80px;
+        }
+      }
+
+      /* Mobile: Layout empilé et centré */
+      @media (max-width: 640px) {
+        .footer-content {
+          flex-direction: column;
+          gap: 16px;
+          padding: 20px;
+        }
+
+        .footer-actions {
+          order: 2;
+          background: rgba(0, 0, 0, 0.02);
+          padding: 4px;
+        }
+
+        .icon-btn-text {
+          display: inline;
+        }
+
+        .footer-text {
+          order: 1;
+          padding: 0;
+          text-align: center;
+          max-width: 80%;
+        }
+      }
+
+      /* Alternative créative: Variante avec badges pour les liens */
+      .footer-text a {
+        display: inline-block;
+        padding: 1px 0;
+      }
+
+      /* Petite animation au chargement */
+      .footer-section {
+        animation: fadeInUp 0.4s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     </style>
   </head>
@@ -628,7 +956,9 @@
               <!-- options générées dynamiquement -->
             </select>
           </h1>
-          <p class="help-text">← / → naviguer • Espace retourner</p>
+          <p class="help-text">
+            ← / → pour naviguer • Espace pour retourner • R pour aléatoire
+          </p>
         </div>
       </header>
 
@@ -661,29 +991,73 @@
                 id="prevBtn"
                 class="btn secondary"
                 title="Carte précédente (←)"
+                aria-label="Carte précédente"
               >
-                <svg class="btn-icon" viewBox="0 0 24 24">
-                  <path d="M15 18l-6-6 6-6" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-arrow-left-icon lucide-arrow-left btn-icon"
+                >
+                  <path d="m12 19-7-7 7-7" />
+                  <path d="M19 12H5" />
                 </svg>
-                Précédent
+                <span class="btn-text">Précédent</span>
               </button>
 
               <button
                 id="flipBtn"
                 class="btn btn-flip"
                 title="Retourner la carte (Espace)"
+                aria-label="Retourner"
               >
-                Retourner
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-repeat-icon lucide-repeat btn-icon btn-icon-flip"
+                >
+                  <path d="m17 2 4 4-4 4" />
+                  <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+                  <path d="m7 22-4-4 4-4" />
+                  <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                </svg>
+                <span class="btn-text">Retourner</span>
               </button>
 
               <button
                 id="nextBtn"
                 class="btn secondary"
                 title="Carte suivante (→)"
+                aria-label="Carte suivante"
               >
-                Suivant
-                <svg class="btn-icon" viewBox="0 0 24 24">
-                  <path d="M9 18l6-6-6-6" />
+                <span class="btn-text">Suivant</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-arrow-right-icon lucide-arrow-right btn-icon"
+                >
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
                 </svg>
               </button>
             </div>
@@ -761,7 +1135,84 @@
 
     <footer class="footer-section">
       <div class="footer-content">
-        <!-- Votre contenu footer ici -->
+        <div class="footer-actions">
+          <a
+            href="https://capecl.fr"
+            class="icon-btn"
+            aria-label="Accueil CAPECL"
+            title="Accueil CAPECL"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-house-icon lucide-house"
+            >
+              <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+              <path
+                d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+              />
+            </svg>
+            <span class="icon-btn-text">Accueil</span>
+            <span class="sr-only">Accueil</span>
+          </a>
+          <a
+            href="https://github.com/pierrelouis-cmrt/Cartes"
+            class="icon-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Dépôt GitHub"
+            title="Dépôt GitHub"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-github-icon lucide-github"
+            >
+              <path
+                d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"
+              />
+              <path d="M9 18c-4.51 2-5-2-7-2" />
+            </svg>
+            <span class="icon-btn-text">GitHub</span>
+            <span class="sr-only">GitHub</span>
+          </a>
+        </div>
+
+        <p class="footer-text">
+          Site réalisé par
+          <a
+            href="https://pierrelouis.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Pierre‑Louis</a
+          >. Flashcards par B. Bernard, sous licence comme indiqué dans le
+          <a
+            href="https://github.com/pierrelouis-cmrt/Cartes#readme"
+            target="_blank"
+            rel="noopener noreferrer"
+            >README</a
+          >, et disponibles sur
+          <a
+            href="https://gitlab.com/capecl/y2"
+            target="_blank"
+            rel="noopener noreferrer"
+            >GitLab</a
+          >.
+        </p>
       </div>
     </footer>
 
@@ -1400,9 +1851,11 @@
         const timerFilter = qs("#timerFilter");
         timerFilter.addEventListener("click", cycleTimer);
         // Also allow clicking the whole group (incl. label)
-        const timerGroup = timerFilter ? timerFilter.closest('.filter-group') : null;
+        const timerGroup = timerFilter
+          ? timerFilter.closest(".filter-group")
+          : null;
         if (timerGroup) {
-          timerGroup.addEventListener('click', (e) => {
+          timerGroup.addEventListener("click", (e) => {
             // Avoid double-trigger when clicking directly on the pills
             if (timerFilter.contains(e.target)) return;
             cycleTimer();
@@ -1419,9 +1872,11 @@
         const diffFilter = qs("#difficultyFilter");
         diffFilter.addEventListener("click", cycleDifficulty);
         // Also allow clicking the whole group (incl. label)
-        const diffGroup = diffFilter ? diffFilter.closest('.filter-group') : null;
+        const diffGroup = diffFilter
+          ? diffFilter.closest(".filter-group")
+          : null;
         if (diffGroup) {
-          diffGroup.addEventListener('click', (e) => {
+          diffGroup.addEventListener("click", (e) => {
             if (diffFilter.contains(e.target)) return;
             cycleDifficulty();
           });
