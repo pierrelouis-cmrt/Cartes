@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" translate="no" class="notranslate">
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
+    <!-- Disable browser auto-translation and lock light mode -->
+    <meta name="google" content="notranslate" />
+    <meta http-equiv="Content-Language" content="fr" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Cartes mémoire physique</title>
     <link rel="preconnect" href="https://cloud.umami.is" crossorigin />
     <script
@@ -27,6 +33,8 @@
     </script>
     <style>
       :root {
+        /* Prevent UA auto-darkening of built-in controls */
+        color-scheme: light;
         --bg: #ffffff;
         --fg: #0f0f0f;
         --muted: #6b7280;
