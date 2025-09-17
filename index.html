@@ -61,6 +61,7 @@
         --red: #ef4444;
         --gray: #d1d5db;
         --gold: #fbbf24;
+        --gold-hover: #fcd34d;
         /* UI overlays */
         --glass: rgba(249, 250, 251, 0.7);
         --hover-bg: rgba(0, 0, 0, 0.04);
@@ -88,6 +89,7 @@
           --skeleton-shine: #1a1f26;
           --gray: #374151;
           --gold: #f59e0b;
+          --gold-hover: #fbbf24;
           --glass: rgba(11, 15, 20, 0.6);
           --hover-bg: rgba(255, 255, 255, 0.06);
           --pill-bg: rgba(255, 255, 255, 0.03);
@@ -436,55 +438,6 @@
         opacity: 1;
       }
 
-      /* Bookmark button */
-      .bookmark-btn {
-        position: absolute;
-        top: -12px;
-        left: -12px;
-        right: auto;
-        z-index: 5;
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: var(--bg);
-        border: 2px solid var(--border-light);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      .bookmark-btn:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      .bookmark-btn:active {
-        transform: scale(0.95);
-      }
-
-      .bookmark-btn.active {
-        background: var(--gold);
-        border-color: var(--gold);
-      }
-
-      .bookmark-btn svg {
-        width: 24px;
-        height: 24px;
-        fill: none;
-        stroke: var(--fg);
-        stroke-width: 2;
-        transition: all 0.2s ease;
-      }
-
-      .bookmark-btn.active svg {
-        fill: var(--bg);
-        stroke: var(--bg);
-      }
-
       /* Controls section */
       .controls-wrapper {
         width: 100%;
@@ -568,9 +521,38 @@
         stroke-linejoin: round;
       }
 
-      .btn-flip {
+      /* Bookmark button styles */
+      .btn-bookmark {
         background: var(--accent);
         padding: 12px 32px;
+        position: relative;
+      }
+
+      .btn-bookmark.active {
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+
+      .btn-bookmark:hover:not(:disabled) {
+        background: var(--accent);
+      }
+
+      .btn-bookmark svg {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        transition: all 0.2s ease;
+      }
+
+      .btn-bookmark.active svg {
+        fill: currentColor;
+      }
+
+      .btn-bookmark.active:hover:not(:disabled) {
+        background: var(--gold-hover);
+        border-color: var(--gold-hover);
       }
 
       /* Filter controls */
@@ -836,11 +818,7 @@
         }
       }
 
-      /* Ultra-small screens: icon-only flip button */
-      #flipBtn .btn-icon-flip {
-        display: none;
-      }
-
+      /* Ultra-small screens: text only for bookmark button */
       @media (max-width: 328px) {
         .filter-controls {
           gap: 0;
@@ -848,15 +826,12 @@
         .filter-group {
           padding: 3px;
         }
-        #flipBtn .btn-text {
+        #bookmarkBtn .btn-text {
           display: none;
         }
-        #flipBtn .btn-icon-flip {
-          display: inline-block;
-        }
-        #flipBtn {
-          padding-left: 36px;
-          padding-right: 36px;
+        #bookmarkBtn {
+          padding-left: 12px;
+          padding-right: 12px;
         }
       }
 
@@ -1101,7 +1076,7 @@
           </h1>
           <p class="help-text">
             ← / → pour naviguer • Espace pour retourner • R pour aléatoire • F
-            pour favoris
+            pour favoris • B pour favori
           </p>
         </div>
       </header>
@@ -1110,22 +1085,6 @@
         <section class="stage" id="stage" aria-label="Carte mémoire">
           <div class="skeleton-card" id="skeleton"></div>
           <div class="card-shell" id="cardShell">
-            <button
-              class="bookmark-btn"
-              id="bookmarkBtn"
-              aria-label="Mettre en favori"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                />
-              </svg>
-            </button>
             <div
               class="card3d"
               id="card3d"
@@ -1172,10 +1131,10 @@
               </button>
 
               <button
-                id="flipBtn"
-                class="btn btn-flip"
-                title="Retourner la carte (Espace)"
-                aria-label="Retourner"
+                id="bookmarkBtn"
+                class="btn btn-bookmark"
+                title="Ajouter/retirer des favoris (B)"
+                aria-label="Ajouter aux favoris"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1187,14 +1146,13 @@
                   stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  class="lucide lucide-repeat-icon lucide-repeat btn-icon btn-icon-flip"
+                  class="lucide lucide-bookmark-icon lucide-bookmark"
                 >
-                  <path d="m17 2 4 4-4 4" />
-                  <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
-                  <path d="m7 22-4-4 4-4" />
-                  <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+                  <path
+                    d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
+                  />
                 </svg>
-                <span class="btn-text">Retourner</span>
+                <span class="btn-text">Ajouter</span>
               </button>
 
               <button
@@ -2112,8 +2070,6 @@
       function bindUI() {
         const shell = qs("#cardShell");
         shell.addEventListener("click", (e) => {
-          // Don't flip if clicking on bookmark button
-          if (e.target.closest("#bookmarkBtn")) return;
           if (!state.isTransitioning) {
             setFlipped(!state.flipped);
           }
@@ -2123,18 +2079,11 @@
         const bookmarkBtn = qs("#bookmarkBtn");
         if (bookmarkBtn) {
           bookmarkBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
             const currentCard = state.deck[state.i];
             toggleFavourite(currentCard);
             updateBookmarkButton();
           });
         }
-
-        qs("#flipBtn").addEventListener("click", () => {
-          if (!state.isTransitioning) {
-            setFlipped(!state.flipped);
-          }
-        });
 
         qs("#nextBtn").addEventListener("click", nextCard);
         qs("#prevBtn").addEventListener("click", prevCard);
