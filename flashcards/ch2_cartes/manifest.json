@@ -1,0 +1,118 @@
+{
+  "cards_by_border": {
+    "green": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      10,
+      11
+    ],
+    "orange": [
+      8,
+      9,
+      12,
+      16
+    ],
+    "red": [
+      13
+    ],
+    "purple": [
+      14,
+      15
+    ]
+  },
+  "cards_by_timer": {
+    "green": [
+      1,
+      2,
+      3,
+      5,
+      8,
+      10,
+      11,
+      12,
+      16
+    ],
+    "orange": [
+      4,
+      6,
+      7,
+      9,
+      13
+    ],
+    "none": [
+      14,
+      15
+    ]
+  },
+  "per_card": {
+    "1": {
+      "border": "green",
+      "timer": "green"
+    },
+    "2": {
+      "border": "green",
+      "timer": "green"
+    },
+    "3": {
+      "border": "green",
+      "timer": "green"
+    },
+    "4": {
+      "border": "green",
+      "timer": "orange"
+    },
+    "5": {
+      "border": "green",
+      "timer": "green"
+    },
+    "6": {
+      "border": "green",
+      "timer": "orange"
+    },
+    "7": {
+      "border": "green",
+      "timer": "orange"
+    },
+    "8": {
+      "border": "orange",
+      "timer": "green"
+    },
+    "9": {
+      "border": "orange",
+      "timer": "orange"
+    },
+    "10": {
+      "border": "green",
+      "timer": "green"
+    },
+    "11": {
+      "border": "green",
+      "timer": "green"
+    },
+    "12": {
+      "border": "orange",
+      "timer": "green"
+    },
+    "13": {
+      "border": "red",
+      "timer": "orange"
+    },
+    "14": {
+      "border": "purple",
+      "timer": "none"
+    },
+    "15": {
+      "border": "purple",
+      "timer": "none"
+    },
+    "16": {
+      "border": "orange",
+      "timer": "green"
+    }
+  }
+}
