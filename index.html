@@ -12,7 +12,11 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="supported-color-schemes" content="light dark" />
     <meta name="theme-color" content="#ffffff" />
-    <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="theme-color"
+      content="#0b0f14"
+      media="(prefers-color-scheme: dark)"
+    />
     <title>Cartes mémoire physique</title>
     <link rel="preconnect" href="https://cloud.umami.is" crossorigin />
     <script
@@ -45,6 +49,7 @@
         --btn-fg: #ffffff;
         --btn-hover: #2a2a2a;
         --border: #e5e7eb;
+        --border-light: var(--border);
         --radius: 12px;
         --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
@@ -55,6 +60,7 @@
         --orange: #fb923c;
         --red: #ef4444;
         --gray: #d1d5db;
+        --gold: #fbbf24;
         /* UI overlays */
         --glass: rgba(249, 250, 251, 0.7);
         --hover-bg: rgba(0, 0, 0, 0.04);
@@ -66,20 +72,22 @@
 
       @media (prefers-color-scheme: dark) {
         :root {
-          --bg: #0b0f14;         /* near black with slight blue */
-          --fg: #e6e8ee;         /* light foreground */
-          --muted: #9aa3b2;      /* muted text */
-          --accent: #cbd5e1;     /* slate-300 like */
-          --btn: #e5e7eb;        /* light button */
-          --btn-fg: #0f1117;     /* dark text on light button */
-          --btn-hover: #cfd3d8;  /* slightly darker on hover */
-          --border: #1f2937;     /* slate-800 border */
+          --bg: #0b0f14; /* near black with slight blue */
+          --fg: #e6e8ee; /* light foreground */
+          --muted: #9aa3b2; /* muted text */
+          --accent: #cbd5e1; /* slate-300 like */
+          --btn: #e5e7eb; /* light button */
+          --btn-fg: #0f1117; /* dark text on light button */
+          --btn-hover: #cfd3d8; /* slightly darker on hover */
+          --border: #1f2937; /* slate-800 border */
+          --border-light: #374151; /* slate-700 border for lighter elements */
           --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
           --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.55);
           --shadow-active: 0 20px 60px rgba(0, 0, 0, 0.6);
           --skeleton-bg: #111418;
           --skeleton-shine: #1a1f26;
           --gray: #374151;
+          --gold: #f59e0b;
           --glass: rgba(11, 15, 20, 0.6);
           --hover-bg: rgba(255, 255, 255, 0.06);
           --pill-bg: rgba(255, 255, 255, 0.03);
@@ -302,7 +310,8 @@
         cursor: pointer;
         transition: transform 0.15s ease-out, opacity 0.2s ease-out;
         will-change: transform, opacity;
-        contain: paint;
+        /* Allow floating controls (bookmark) to overflow */
+        contain: layout;
         transform: translateZ(0);
       }
 
@@ -427,6 +436,55 @@
         opacity: 1;
       }
 
+      /* Bookmark button */
+      .bookmark-btn {
+        position: absolute;
+        top: -12px;
+        left: -12px;
+        right: auto;
+        z-index: 5;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--bg);
+        border: 2px solid var(--border-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .bookmark-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .bookmark-btn:active {
+        transform: scale(0.95);
+      }
+
+      .bookmark-btn.active {
+        background: var(--gold);
+        border-color: var(--gold);
+      }
+
+      .bookmark-btn svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: var(--fg);
+        stroke-width: 2;
+        transition: all 0.2s ease;
+      }
+
+      .bookmark-btn.active svg {
+        fill: var(--bg);
+        stroke: var(--bg);
+      }
+
       /* Controls section */
       .controls-wrapper {
         width: 100%;
@@ -544,6 +602,13 @@
         touch-action: manipulation;
       }
 
+      .toggle-pair {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: center;
+      }
+
       .filter-label {
         font-size: 11px;
         text-transform: uppercase;
@@ -609,7 +674,8 @@
       }
 
       /* Random Toggle */
-      .random-toggle {
+      .random-toggle,
+      .favourites-toggle {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -625,18 +691,27 @@
         touch-action: manipulation;
       }
 
-      .random-toggle:hover {
+      .random-toggle:hover,
+      .favourites-toggle:hover {
         border-color: var(--accent);
         background: var(--hover-bg);
       }
 
-      .random-toggle.active {
+      .random-toggle.active,
+      .favourites-toggle.active {
         background: var(--fg);
         color: var(--bg);
         border-color: var(--fg);
       }
 
-      .random-icon {
+      .favourites-toggle.active {
+        background: var(--gold);
+        color: var(--bg);
+        border-color: var(--gold);
+      }
+
+      .random-icon,
+      .favourites-icon {
         width: 20px;
         height: 20px;
         display: flex;
@@ -644,7 +719,8 @@
         justify-content: center;
       }
 
-      .random-icon svg {
+      .random-icon svg,
+      .favourites-icon svg {
         width: 20px;
         height: 20px;
         fill: none;
@@ -655,13 +731,26 @@
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
+      .favourites-toggle.active .favourites-icon svg {
+        fill: currentColor;
+      }
+
       .random-toggle.active .random-icon svg {
         transform: rotate(180deg);
       }
 
-      .random-label {
+      .random-label,
+      .favourites-label {
         font-size: 13px;
         font-weight: 600;
+      }
+
+      .favourites-count {
+        font-size: 11px;
+        padding: 2px 6px;
+        background: var(--pill-bg);
+        border-radius: 10px;
+        margin-left: 4px;
       }
 
       /* Counter */
@@ -720,8 +809,30 @@
         .nav-buttons .btn {
           padding: 12px; /* compact but tappable */
         }
-        .random-label {
+        /* .random-label,
+        .favourites-label {
           display: none;
+        }
+        .favourites-count {
+          display: none;
+        } */
+      }
+
+      @media (max-width: 545px) {
+        .filter-controls {
+          justify-content: center;
+        }
+
+        .toggle-pair {
+          flex: 1 0 100%;
+          justify-content: center;
+          width: 100%;
+        }
+
+        .toggle-pair .random-toggle,
+        .toggle-pair .favourites-toggle {
+          width: fit-content;
+          max-width: fit-content;
         }
       }
 
@@ -989,7 +1100,8 @@
             </select>
           </h1>
           <p class="help-text">
-            ← / → pour naviguer • Espace pour retourner • R pour aléatoire
+            ← / → pour naviguer • Espace pour retourner • R pour aléatoire • F
+            pour favoris
           </p>
         </div>
       </header>
@@ -998,6 +1110,22 @@
         <section class="stage" id="stage" aria-label="Carte mémoire">
           <div class="skeleton-card" id="skeleton"></div>
           <div class="card-shell" id="cardShell">
+            <button
+              class="bookmark-btn"
+              id="bookmarkBtn"
+              aria-label="Mettre en favori"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                />
+              </svg>
+            </button>
             <div
               class="card3d"
               id="card3d"
@@ -1126,36 +1254,61 @@
                 </div>
               </div>
 
-              <div
-                class="random-toggle"
-                id="randomToggle"
-                role="switch"
-                aria-checked="false"
-                tabindex="0"
-              >
-                <div class="random-icon">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
-                    <path
-                      d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"
-                    />
-                    <path d="M6 18h.01" />
-                    <path d="M10 14h.01" />
-                    <path d="M15 6h.01" />
-                    <path d="M18 9h.01" />
-                  </svg>
+              <div class="toggle-pair">
+                <div
+                  class="random-toggle"
+                  id="randomToggle"
+                  role="switch"
+                  aria-checked="false"
+                  tabindex="0"
+                >
+                  <div class="random-icon">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+                      <path
+                        d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"
+                      />
+                      <path d="M6 18h.01" />
+                      <path d="M10 14h.01" />
+                      <path d="M15 6h.01" />
+                      <path d="M18 9h.01" />
+                    </svg>
+                  </div>
+                  <span class="random-label">Aléatoire</span>
                 </div>
-                <span class="random-label">Aléatoire</span>
+
+                <div
+                  class="favourites-toggle"
+                  id="favouritesToggle"
+                  role="switch"
+                  aria-checked="false"
+                  tabindex="0"
+                >
+                  <div class="favourites-icon">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                      />
+                    </svg>
+                  </div>
+                  <span class="favourites-label">Favoris</span>
+                  <span class="favourites-count" id="favouritesCount">0</span>
+                </div>
               </div>
             </div>
 
@@ -1230,7 +1383,7 @@
             href="https://pierrelouis.net"
             target="_blank"
             rel="noopener noreferrer"
-            >Pierre‑Louis</a
+            >Pierre-Louis</a
           >. Flashcards par B. Bernard, sous licence comme indiqué dans le
           <a
             href="https://github.com/pierrelouis-cmrt/Cartes#readme"
@@ -1315,21 +1468,85 @@
         return arr;
       }
 
+      // Favourites management
+      function getFavouritesKey() {
+        return `fc_favourites_ch${state.chapter}`;
+      }
+
+      function loadFavourites() {
+        const key = getFavouritesKey();
+        const stored = localStorage.getItem(key);
+        return stored ? new Set(JSON.parse(stored)) : new Set();
+      }
+
+      function saveFavourites(favourites) {
+        const key = getFavouritesKey();
+        localStorage.setItem(key, JSON.stringify(Array.from(favourites)));
+        updateFavouritesCount();
+      }
+
+      function toggleFavourite(cardNo) {
+        const favourites = loadFavourites();
+        if (favourites.has(cardNo)) {
+          favourites.delete(cardNo);
+        } else {
+          favourites.add(cardNo);
+        }
+        saveFavourites(favourites);
+        return favourites.has(cardNo);
+      }
+
+      function updateFavouritesCount() {
+        const count = loadFavourites().size;
+        const countEl = qs("#favouritesCount");
+        if (countEl) countEl.textContent = count.toString();
+      }
+
+      function updateBookmarkButton() {
+        const btn = qs("#bookmarkBtn");
+        if (!btn) return;
+        const currentCard = state.deck[state.i];
+        const favourites = loadFavourites();
+        const isFavourite = favourites.has(currentCard);
+        btn.classList.toggle("active", isFavourite);
+        btn.setAttribute("aria-pressed", String(isFavourite));
+      }
+
       const state = {
         total: 0,
         deck: [],
         i: 0,
         flipped: false,
         shuffle: JSON.parse(localStorage.getItem("fc_shuffle") || "false"),
+        showFavouritesOnly: false,
         chapter: null,
         basePath: "",
         sizes: {},
         isTransitioning: false,
         imagesLoaded: new Set(),
         manifest: null,
-        filterTimer: localStorage.getItem("fc_filter_timer") || "all",
-        filterDifficulty: localStorage.getItem("fc_filter_diff") || "all",
+        filterTimer: "all",
+        filterDifficulty: "all",
       };
+
+      const LAST_CARD_KEY_PREFIX = "fc_last_card_";
+
+      function getStoredCard(chapter) {
+        if (!chapter) return null;
+        const raw = localStorage.getItem(`${LAST_CARD_KEY_PREFIX}${chapter}`);
+        const parsed = parseInt(raw, 10);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+
+      function storeCurrentCard(cardNo) {
+        if (!state.chapter || !cardNo) return;
+        try {
+          localStorage.setItem(
+            `${LAST_CARD_KEY_PREFIX}${state.chapter}`,
+            String(cardNo)
+          );
+        } catch (_) {}
+      }
 
       // Timer states cycle
       const timerStates = ["all", "green", "orange"];
@@ -1373,7 +1590,7 @@
       function applyChapter(n) {
         state.chapter = n;
         state.basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
-        localStorage.setItem("fc_chapter", String(n));
+        updateFavouritesCount();
       }
 
       async function loadManifest() {
@@ -1412,7 +1629,8 @@
           return;
         }
 
-        rebuildDeck();
+        const storedCard = getStoredCard(state.chapter);
+        rebuildDeck(storedCard);
         if (!state.deck.length) {
           hideSkeleton();
           qs("#counter").textContent = "Aucune carte disponible.";
@@ -1431,8 +1649,8 @@
           opt.textContent = `Chapitre ${n}`;
           sel.appendChild(opt);
         });
-        const stored = parseInt(localStorage.getItem("fc_chapter") || "", 10);
-        const initial = chapters.includes(stored) ? stored : chapters[0];
+        const defaultChapter = chapters[chapters.length - 1];
+        const initial = defaultChapter;
         sel.value = String(initial);
         sel.addEventListener("change", async (e) => {
           const val = parseInt(e.target.value, 10);
@@ -1554,6 +1772,12 @@
           }
         }
 
+        // Apply favourites filter if active
+        if (state.showFavouritesOnly) {
+          const favourites = loadFavourites();
+          newDeck = newDeck.filter((n) => favourites.has(n));
+        }
+
         if (state.shuffle) shuffleInPlace(newDeck);
         if (keepCardNo != null) {
           const idx = newDeck.indexOf(keepCardNo);
@@ -1570,11 +1794,16 @@
       function updateCounter() {
         const el = qs("#counter");
         if (!state.deck.length) {
-          el.textContent = "Aucune image trouvée.";
+          if (state.showFavouritesOnly) {
+            el.textContent = "Aucun favori disponible.";
+          } else {
+            el.textContent = "Aucune image trouvée.";
+          }
           return;
         }
         const position = Math.min(state.i + 1, state.deck.length);
-        el.textContent = `Carte ${position} sur ${state.deck.length}`;
+        const prefix = state.showFavouritesOnly ? "Favori " : "Carte ";
+        el.textContent = `${prefix}${position} sur ${state.deck.length}`;
       }
 
       function setFlipped(on) {
@@ -1695,12 +1924,16 @@
           backImg.classList.add("loaded");
           hideSkeleton();
           updateCounter();
+          updateBookmarkButton();
         };
 
         if (direction === "none") {
           await swapImages();
           updateNavButtons();
           state.isTransitioning = false;
+          if (state.deck.length) {
+            storeCurrentCard(state.deck[state.i]);
+          }
           preloadNearbyCards();
           return;
         }
@@ -1731,6 +1964,10 @@
 
         state.isTransitioning = false;
         updateNavButtons();
+
+        if (state.deck.length) {
+          storeCurrentCard(state.deck[state.i]);
+        }
 
         preloadNearbyCards();
       }
@@ -1790,10 +2027,32 @@
         showCurrent();
       }
 
+      function toggleFavouritesOnly() {
+        state.showFavouritesOnly = !state.showFavouritesOnly;
+        const keep = state.deck[state.i];
+        rebuildDeck(keep);
+        updateFavouritesUI();
+
+        if (!state.deck.length) {
+          qs("#counter").textContent = "Aucun favori disponible.";
+          hideSkeleton();
+          updateNavButtons();
+          return;
+        }
+        showCurrent();
+      }
+
       function updateShuffleUI() {
         const toggle = qs("#randomToggle");
         toggle.classList.toggle("active", state.shuffle);
         toggle.setAttribute("aria-checked", String(state.shuffle));
+      }
+
+      function updateFavouritesUI() {
+        const toggle = qs("#favouritesToggle");
+        if (!toggle) return;
+        toggle.classList.toggle("active", state.showFavouritesOnly);
+        toggle.setAttribute("aria-checked", String(state.showFavouritesOnly));
       }
 
       function updateNavButtons() {
@@ -1808,7 +2067,6 @@
         const currentIndex = timerStates.indexOf(state.filterTimer);
         const nextIndex = (currentIndex + 1) % timerStates.length;
         state.filterTimer = timerStates[nextIndex];
-        localStorage.setItem("fc_filter_timer", state.filterTimer);
         updateTimerUI();
 
         const keep = state.deck[state.i];
@@ -1832,7 +2090,6 @@
         const currentIndex = difficultyStates.indexOf(state.filterDifficulty);
         const nextIndex = (currentIndex + 1) % difficultyStates.length;
         state.filterDifficulty = difficultyStates[nextIndex];
-        localStorage.setItem("fc_filter_diff", state.filterDifficulty);
         updateDifficultyUI();
 
         const keep = state.deck[state.i];
@@ -1854,11 +2111,24 @@
 
       function bindUI() {
         const shell = qs("#cardShell");
-        shell.addEventListener("click", () => {
+        shell.addEventListener("click", (e) => {
+          // Don't flip if clicking on bookmark button
+          if (e.target.closest("#bookmarkBtn")) return;
           if (!state.isTransitioning) {
             setFlipped(!state.flipped);
           }
         });
+
+        // Bookmark button
+        const bookmarkBtn = qs("#bookmarkBtn");
+        if (bookmarkBtn) {
+          bookmarkBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const currentCard = state.deck[state.i];
+            toggleFavourite(currentCard);
+            updateBookmarkButton();
+          });
+        }
 
         qs("#flipBtn").addEventListener("click", () => {
           if (!state.isTransitioning) {
@@ -1878,6 +2148,18 @@
             toggleShuffle();
           }
         });
+
+        // Favourites toggle
+        const favouritesToggle = qs("#favouritesToggle");
+        if (favouritesToggle) {
+          favouritesToggle.addEventListener("click", toggleFavouritesOnly);
+          favouritesToggle.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleFavouritesOnly();
+            }
+          });
+        }
 
         // Timer filter
         const timerFilter = qs("#timerFilter");
@@ -1936,6 +2218,13 @@
             }
           } else if (e.key.toLowerCase() === "r" && !e.ctrlKey && !e.metaKey) {
             toggleShuffle();
+          } else if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey) {
+            toggleFavouritesOnly();
+          } else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) {
+            // Keyboard shortcut for bookmarking
+            const currentCard = state.deck[state.i];
+            toggleFavourite(currentCard);
+            updateBookmarkButton();
           }
         });
 
@@ -1945,25 +2234,10 @@
         // window.addEventListener("resize", () => { /* disabled on purpose */ });
       }
 
-      // Sanitize stored filter values
-      function sanitizeFilters() {
-        const allowedTimers = new Set(["all", "green", "orange"]);
-        if (!allowedTimers.has(state.filterTimer)) {
-          state.filterTimer = "all";
-          localStorage.setItem("fc_filter_timer", state.filterTimer);
-        }
-
-        const allowedDifficulties = new Set(["all", "green", "orange", "red"]);
-        if (!allowedDifficulties.has(state.filterDifficulty)) {
-          state.filterDifficulty = "all";
-          localStorage.setItem("fc_filter_diff", state.filterDifficulty);
-        }
-      }
-
       (async function init() {
-        sanitizeFilters();
         bindUI();
         updateShuffleUI();
+        updateFavouritesUI();
         updateTimerUI();
         updateDifficultyUI();
 
