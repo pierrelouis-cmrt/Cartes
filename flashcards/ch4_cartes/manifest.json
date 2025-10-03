@@ -1,0 +1,90 @@
+{
+  "cards_by_border": {
+    "green": [
+      1,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "orange": [
+      2,
+      6
+    ],
+    "red": [
+      12
+    ]
+  },
+  "cards_by_timer": {
+    "green": [
+      1,
+      4,
+      5,
+      7,
+      9,
+      10,
+      11
+    ],
+    "orange": [
+      2,
+      3,
+      6,
+      8,
+      12
+    ]
+  },
+  "per_card": {
+    "1": {
+      "border": "green",
+      "timer": "green"
+    },
+    "2": {
+      "border": "orange",
+      "timer": "orange"
+    },
+    "3": {
+      "border": "green",
+      "timer": "orange"
+    },
+    "4": {
+      "border": "green",
+      "timer": "green"
+    },
+    "5": {
+      "border": "green",
+      "timer": "green"
+    },
+    "6": {
+      "border": "orange",
+      "timer": "orange"
+    },
+    "7": {
+      "border": "green",
+      "timer": "green"
+    },
+    "8": {
+      "border": "green",
+      "timer": "orange"
+    },
+    "9": {
+      "border": "green",
+      "timer": "green"
+    },
+    "10": {
+      "border": "green",
+      "timer": "green"
+    },
+    "11": {
+      "border": "green",
+      "timer": "green"
+    },
+    "12": {
+      "border": "red",
+      "timer": "orange"
+    }
+  }
+}
