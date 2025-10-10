@@ -589,6 +589,11 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
 
     seq_index = 1
     total_fronts = total_backs = 0
+    ext = args.output_format
+    canonical_front_size: Optional[Tuple[int, int]] = None
+    canonical_back_size: Optional[Tuple[int, int]] = None
+    front_size_consistent = True
+    back_size_consistent = True
 
     for pno in range(doc.page_count):
         page = doc.load_page(pno)
@@ -656,7 +661,6 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
                 )
                 timer_color = classify_timer_color(timer_rgb)
 
-            ext = args.output_format
             front_name = os.path.join(out_dir, f"front{seq_index}.{ext}")
             back_name = os.path.join(out_dir, f"back{seq_index}.{ext}")
 
@@ -681,9 +685,22 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
             num = seq_index
             cards_by_border.get(border_color, cards_by_border["unknown"]).append(num)
             cards_by_timer.get(timer_color, cards_by_timer["unknown"]).append(num)
+            front_size = (front_img.width, front_img.height)
+            back_size = (back_img.width, back_img.height)
+            if canonical_front_size is None:
+                canonical_front_size = front_size
+            elif canonical_front_size != front_size:
+                front_size_consistent = False
+            if canonical_back_size is None:
+                canonical_back_size = back_size
+            elif canonical_back_size != back_size:
+                back_size_consistent = False
+
             per_card[str(num)] = {
                 "border": border_color,
                 "timer": timer_color,
+                "front": {"width": front_img.width, "height": front_img.height},
+                "back": {"width": back_img.width, "height": back_img.height},
             }
 
             seq_index += 1
@@ -691,11 +708,26 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
         if total_fronts - base_fronts != 4 or total_backs - base_backs != 4:
             fail("Internal error: did not produce exactly 4 fronts and 4 backs for this page.")
 
-    manifest = {
+    manifest: Dict[str, Any] = {
+        "chapter": base_name,
+        "image_format": ext,
+        "total_cards": total_fronts,
         "cards_by_border": {k: sorted(v) for k, v in cards_by_border.items() if v},
         "cards_by_timer": {k: sorted(v) for k, v in cards_by_timer.items() if v},
         "per_card": per_card,
     }
+    if front_size_consistent and canonical_front_size is not None:
+        manifest["card_dimensions"] = manifest.get("card_dimensions", {})
+        manifest["card_dimensions"]["front"] = {
+            "width": canonical_front_size[0],
+            "height": canonical_front_size[1],
+        }
+    if back_size_consistent and canonical_back_size is not None:
+        manifest.setdefault("card_dimensions", {})
+        manifest["card_dimensions"]["back"] = {
+            "width": canonical_back_size[0],
+            "height": canonical_back_size[1],
+        }
     manifest_path = os.path.join(out_dir, "manifest.json")
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)

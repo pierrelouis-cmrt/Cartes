@@ -1058,7 +1058,6 @@
           transform: translateY(0);
         }
       }
-
     </style>
   </head>
   <body>
@@ -1362,14 +1361,15 @@
 
     <script>
       /* ==========================
-       Configuration
-       ========================== */
+ Configuration
+ ========================== */
       const CHAPTERS_MANUAL = [];
       const CHAPTER_PREFIX = "ch";
       const CHAPTER_SUFFIX = "_cartes";
       const MAX_CHAPTERS_PROBE = 20;
       const MAX_PROBE = 100;
       const PRELOAD_RADIUS = 2;
+      const MAX_HISTORY = 5; // Maximum history for shuffle mode
 
       /* ===== Helpers ===== */
       const qs = (s, el = document) => el.querySelector(s);
@@ -1377,6 +1377,9 @@
       // Image cache to avoid redundant loads
       const imageCache = new Map();
       const loadingImages = new Map();
+      const manifestCache = new Map();
+      const manifestFetches = new Map();
+      const formatCacheByBase = new Map();
 
       function loadImage(url, useCache = true) {
         if (useCache && imageCache.has(url)) {
@@ -1428,6 +1431,153 @@
         return `${basePath}/${prefix}${n}.${ext}`;
       }
 
+      function normalizeExt(ext) {
+        return typeof ext === "string" ? ext.trim().toLowerCase() : "";
+      }
+
+      function deriveFormatsFromManifest(manifest) {
+        if (!manifest || typeof manifest !== "object") return null;
+        const formats = {};
+        const imgFormats = manifest.image_formats || manifest.formats;
+        if (imgFormats && typeof imgFormats === "object") {
+          if (imgFormats.front) formats.front = normalizeExt(imgFormats.front);
+          if (imgFormats.back) formats.back = normalizeExt(imgFormats.back);
+          if (imgFormats.default)
+            formats.default = normalizeExt(imgFormats.default);
+        }
+        if (manifest.image_format) {
+          const ext = normalizeExt(manifest.image_format);
+          if (ext) {
+            if (!formats.front) formats.front = ext;
+            if (!formats.back) formats.back = ext;
+            if (!formats.default) formats.default = ext;
+          }
+        }
+        const keys = Object.keys(formats);
+        if (!keys.length) return null;
+        if (!formats.default) {
+          if (formats.front && formats.back && formats.front === formats.back) {
+            formats.default = formats.front;
+          } else if (formats.front) {
+            formats.default = formats.front;
+          } else if (formats.back) {
+            formats.default = formats.back;
+          }
+        }
+        if (!formats.front && formats.default) formats.front = formats.default;
+        if (!formats.back && formats.default) formats.back = formats.default;
+        return formats;
+      }
+
+      function cacheFormatsForBase(basePath, manifest) {
+        if (!basePath) return null;
+        const derived = deriveFormatsFromManifest(manifest);
+        if (derived) {
+          formatCacheByBase.set(basePath, derived);
+        }
+        return derived;
+      }
+
+      function getPreferredFormats(prefix, basePath = state.basePath) {
+        if (!basePath) return [];
+        const formats =
+          (basePath === state.basePath && state.formats) ||
+          formatCacheByBase.get(basePath);
+        if (!formats) return [];
+        const ordered = [];
+        if (formats[prefix]) ordered.push(formats[prefix]);
+        if (formats.default) ordered.push(formats.default);
+        return Array.from(new Set(ordered.filter(Boolean)));
+      }
+
+      function asPositiveInt(value) {
+        const n = Number(value);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      }
+
+      async function fetchManifest(basePath, { forceReload = false } = {}) {
+        if (!basePath) return null;
+        if (!forceReload && manifestCache.has(basePath)) {
+          return manifestCache.get(basePath);
+        }
+        if (manifestFetches.has(basePath)) {
+          return manifestFetches.get(basePath);
+        }
+        const url = `${basePath}/manifest.json`;
+        const fetchPromise = fetch(url, {
+          cache: forceReload ? "reload" : "no-cache",
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .catch(() => null)
+          .then((data) => {
+            manifestFetches.delete(basePath);
+            if (data) {
+              manifestCache.set(basePath, data);
+              cacheFormatsForBase(basePath, data);
+            }
+            return data;
+          });
+        manifestFetches.set(basePath, fetchPromise);
+        return fetchPromise;
+      }
+
+      function applyManifestMetadata(manifest) {
+        const info = { total: 0, hasSizes: false, defaultSize: null };
+        if (!manifest || typeof manifest !== "object") return info;
+
+        if (Number.isFinite(manifest.total_cards)) {
+          info.total = Number(manifest.total_cards);
+        }
+
+        const formats = cacheFormatsForBase(state.basePath, manifest);
+        if (formats) {
+          state.formats = formats;
+        }
+
+        let maxCard = info.total;
+        let perCardSizeFound = false;
+
+        if (manifest.per_card && typeof manifest.per_card === "object") {
+          for (const [key, value] of Object.entries(manifest.per_card)) {
+            const cardNo = asPositiveInt(key);
+            if (!cardNo) continue;
+            if (cardNo > maxCard) maxCard = cardNo;
+            if (value && typeof value === "object") {
+              let width = null;
+              let height = null;
+              if (value.front && typeof value.front === "object") {
+                width = asPositiveInt(value.front.width);
+                height = asPositiveInt(value.front.height);
+              }
+              if (!width || !height) {
+                width = asPositiveInt(value.width);
+                height = asPositiveInt(value.height);
+              }
+              if (width && height) {
+                state.sizes[cardNo] = { w: width, h: height };
+                perCardSizeFound = true;
+              }
+            }
+          }
+        }
+
+        if (maxCard > info.total) info.total = maxCard;
+        info.hasSizes = perCardSizeFound;
+
+        const dims = manifest.card_dimensions;
+        if (dims && typeof dims === "object") {
+          const frontDims =
+            dims.front && typeof dims.front === "object" ? dims.front : dims;
+          const width = asPositiveInt(frontDims.width);
+          const height = asPositiveInt(frontDims.height);
+          if (width && height) {
+            info.defaultSize = { w: width, h: height };
+          }
+        }
+
+        return info;
+      }
+
       async function loadCardImage(prefix, n, options = {}) {
         const {
           basePath = state.basePath,
@@ -1441,13 +1591,15 @@
 
         const key = imageFormatCacheKey(basePath, prefix, n);
         const cachedExt = imageFormatCache.get(key);
-        const fallbackOrder = IMAGE_FORMATS.slice();
-        const candidates = cachedExt
-          ? [cachedExt, ...fallbackOrder.filter((ext) => ext !== cachedExt)]
-          : fallbackOrder;
+        const baseCandidates = getPreferredFormats(prefix, basePath);
+        const candidateSet = [];
+        if (cachedExt) candidateSet.push(cachedExt);
+        baseCandidates.forEach((ext) => candidateSet.push(ext));
+        IMAGE_FORMATS.forEach((ext) => candidateSet.push(ext));
+        const candidates = Array.from(new Set(candidateSet.filter(Boolean)));
+        if (!candidates.length) return { ok: false, src: "" };
 
-        let lastTried = buildImageURL(basePath, prefix, n, candidates[0]);
-
+        let lastTried = "";
         for (const ext of candidates) {
           const url = buildImageURL(basePath, prefix, n, ext);
           lastTried = url;
@@ -1518,17 +1670,56 @@
       function updateBookmarkButton() {
         const btn = qs("#bookmarkBtn");
         if (!btn) return;
-        const currentCard = state.deck[state.i];
+        const currentCard = getCurrentCard();
         const favourites = loadFavourites();
         const isFavourite = favourites.has(currentCard);
         btn.classList.toggle("active", isFavourite);
         btn.setAttribute("aria-pressed", String(isFavourite));
       }
 
+      // History management for shuffle mode
+      function getHistoryKey() {
+        return `fc_history_ch${state.chapter}`;
+      }
+
+      function saveHistory() {
+        if (!state.shuffle || !state.chapter) return;
+        const key = getHistoryKey();
+        // Only save up to MAX_HISTORY items
+        const toSave = state.history.slice(-MAX_HISTORY);
+        localStorage.setItem(key, JSON.stringify(toSave));
+      }
+
+      function loadHistory() {
+        if (!state.chapter) return [];
+        const key = getHistoryKey();
+        const stored = localStorage.getItem(key);
+        if (!stored) return [];
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            // Filter to only include cards that are in current deck
+            return parsed
+              .filter((card) => state.deck.includes(card))
+              .slice(-MAX_HISTORY);
+          }
+        } catch (_) {}
+        return [];
+      }
+
+      function clearHistory() {
+        if (!state.chapter) return;
+        const key = getHistoryKey();
+        localStorage.removeItem(key);
+      }
+
       const state = {
         total: 0,
-        deck: [],
-        i: 0,
+        deck: [], // All available cards (filtered)
+        history: [], // Cards visited in order (for shuffle mode)
+        historyIndex: -1, // Current position in history (for shuffle mode)
+        currentIndex: 0, // Current position in deck (for sequential mode)
+        unvisited: new Set(), // Cards not yet visited in shuffle mode
         flipped: false,
         shuffle: JSON.parse(localStorage.getItem("fc_shuffle") || "false"),
         showFavouritesOnly: false,
@@ -1537,9 +1728,11 @@
         sizes: {},
         isTransitioning: false,
         imagesLoaded: new Set(),
+        preloading: new Set(),
         manifest: null,
         filterTimer: "all",
         filterDifficulty: "all",
+        formats: null,
       };
 
       const LAST_CARD_KEY_PREFIX = "fc_last_card_";
@@ -1559,6 +1752,25 @@
             String(cardNo)
           );
         } catch (_) {}
+      }
+
+      function getCurrentCard() {
+        if (state.shuffle) {
+          // In shuffle mode, use history
+          if (state.history.length === 0) return null;
+          if (
+            state.historyIndex < 0 ||
+            state.historyIndex >= state.history.length
+          )
+            return null;
+          return state.history[state.historyIndex];
+        } else {
+          // In sequential mode, use deck index
+          if (state.deck.length === 0) return null;
+          if (state.currentIndex < 0 || state.currentIndex >= state.deck.length)
+            return null;
+          return state.deck[state.currentIndex];
+        }
       }
 
       // Timer states cycle
@@ -1589,9 +1801,14 @@
           ) {
             const basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
             batch.push(
-              loadFrontImage(1, { basePath, probe: true }).then((r) =>
-                r.ok ? n : null
-              )
+              (async () => {
+                const manifest = await fetchManifest(basePath).catch(
+                  () => null
+                );
+                if (manifest) return n;
+                const probe = await loadFrontImage(1, { basePath });
+                return probe.ok ? n : null;
+              })()
             );
           }
           const results = await Promise.all(batch);
@@ -1607,20 +1824,29 @@
       function applyChapter(n) {
         state.chapter = n;
         state.basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
+        state.formats = formatCacheByBase.get(state.basePath) || null;
         updateFavouritesCount();
       }
 
-      async function loadManifest() {
+      async function loadManifest(options = {}) {
         state.manifest = null;
-        const url = `${state.basePath}/manifest.json`;
-        try {
-          const res = await fetch(url, { cache: "no-store" });
-          if (!res.ok) return;
-          const data = await res.json();
-          state.manifest = data;
-        } catch (_) {
-          state.manifest = null;
+        if (!state.basePath) {
+          state.formats = null;
+          return { manifest: null, info: { total: 0, hasSizes: false } };
         }
+        const manifest = await fetchManifest(state.basePath, options);
+        state.manifest = manifest;
+        state.formats = formatCacheByBase.get(state.basePath) || state.formats;
+        const info = applyManifestMetadata(manifest);
+        if (info.defaultSize && info.total) {
+          for (let i = 1; i <= info.total; i++) {
+            if (!state.sizes[i]) {
+              state.sizes[i] = { ...info.defaultSize };
+            }
+          }
+          info.hasSizes = true;
+        }
+        return { manifest, info };
       }
 
       async function loadChapter(n) {
@@ -1629,13 +1855,27 @@
         state.sizes = {};
         state.total = 0;
         state.deck = [];
-        state.i = 0;
+        state.history = [];
+        state.historyIndex = -1;
+        state.currentIndex = 0;
+        state.unvisited.clear();
         state.imagesLoaded.clear();
+        state.preloading.clear();
+        state.formats = formatCacheByBase.get(state.basePath) || null;
 
-        const total = await discoverPairs();
+        const { info } = await loadManifest();
+        let total = info.total || 0;
+        let hasSizes = info.hasSizes;
+
+        if (!total) {
+          total = await discoverPairs();
+          hasSizes = true;
+        } else if (!hasSizes && total > 0) {
+          await ensureCardSizes(total);
+          hasSizes = true;
+        }
+
         state.total = total;
-
-        await loadManifest();
 
         if (!total) {
           hideSkeleton();
@@ -1654,6 +1894,40 @@
           updateNavButtons();
           return;
         }
+
+        // Initialize based on mode
+        if (state.shuffle) {
+          // Load saved history
+          const savedHistory = loadHistory();
+          if (savedHistory.length > 0) {
+            state.history = savedHistory;
+            state.historyIndex = savedHistory.length - 1;
+            // Update unvisited set
+            state.unvisited = new Set(state.deck);
+            savedHistory.forEach((card) => state.unvisited.delete(card));
+          } else if (storedCard && state.deck.includes(storedCard)) {
+            state.history = [storedCard];
+            state.historyIndex = 0;
+            state.unvisited = new Set(state.deck);
+            state.unvisited.delete(storedCard);
+          } else {
+            // Start with a random card
+            const randomIdx = Math.floor(Math.random() * state.deck.length);
+            const firstCard = state.deck[randomIdx];
+            state.history = [firstCard];
+            state.historyIndex = 0;
+            state.unvisited = new Set(state.deck);
+            state.unvisited.delete(firstCard);
+          }
+        } else {
+          // Sequential mode
+          if (storedCard && state.deck.includes(storedCard)) {
+            state.currentIndex = state.deck.indexOf(storedCard);
+          } else {
+            state.currentIndex = 0;
+          }
+        }
+
         await showCurrent();
       }
 
@@ -1684,8 +1958,8 @@
         while (left <= right) {
           const mid = Math.floor((left + right) / 2);
           const [pf, pb] = await Promise.all([
-            loadFrontImage(mid, { probe: true }),
-            loadBackImage(mid, { probe: true }),
+            loadFrontImage(mid),
+            loadBackImage(mid),
           ]);
 
           if (pf.ok && pb.ok) {
@@ -1702,7 +1976,7 @@
           for (let k = 1; k <= lastValid; k++) {
             if (!state.sizes[k]) {
               checks.push(
-                loadFrontImage(k, { probe: true }).then((pf) => {
+                loadFrontImage(k).then((pf) => {
                   if (pf.ok) {
                     state.sizes[k] = { w: pf.width, h: pf.height };
                   }
@@ -1716,9 +1990,56 @@
         return lastValid;
       }
 
+      async function ensureCardSizes(total) {
+        if (!total) return;
+        const pending = [];
+        for (let k = 1; k <= total; k++) {
+          if (!state.sizes[k]) pending.push(k);
+        }
+        const batchSize = 6;
+        while (pending.length) {
+          const slice = pending.splice(0, batchSize);
+          await Promise.all(
+            slice.map((cardNo) =>
+              loadFrontImage(cardNo).then((pf) => {
+                if (pf.ok && pf.width && pf.height) {
+                  state.sizes[cardNo] = { w: pf.width, h: pf.height };
+                }
+              })
+            )
+          );
+        }
+      }
+
       function rebuildDeck(keepCardNo = null) {
         const { total, manifest } = state;
-        let newDeck = Array.from({ length: total }, (_, i) => i + 1);
+        let newDeck = null;
+
+        if (
+          manifest &&
+          manifest.per_card &&
+          typeof manifest.per_card === "object"
+        ) {
+          const numbers = Array.from(
+            new Set(
+              Object.keys(manifest.per_card)
+                .map((key) => asPositiveInt(key))
+                .filter(Boolean)
+            )
+          ).sort((a, b) => a - b);
+          if (numbers.length) {
+            newDeck = numbers;
+          }
+        }
+
+        if (!newDeck) {
+          newDeck = Array.from({ length: total }, (_, i) => i + 1);
+        } else if (total && newDeck.length < total) {
+          const existing = new Set(newDeck);
+          for (let i = 1; i <= total; i++) {
+            if (!existing.has(i)) newDeck.push(i);
+          }
+        }
 
         if (manifest) {
           const purple = new Set();
@@ -1795,16 +2116,47 @@
           newDeck = newDeck.filter((n) => favourites.has(n));
         }
 
-        if (state.shuffle) shuffleInPlace(newDeck);
-        if (keepCardNo != null) {
-          const idx = newDeck.indexOf(keepCardNo);
-          state.deck = newDeck;
-          state.i = Math.max(0, idx);
+        // Sort the deck deterministically (don't shuffle here)
+        newDeck.sort((a, b) => a - b);
+
+        state.deck = newDeck;
+
+        // Reset position based on mode
+        if (state.shuffle) {
+          // In shuffle mode, update history if needed
+          if (keepCardNo != null && newDeck.includes(keepCardNo)) {
+            // Keep the card in history
+            if (!state.history.includes(keepCardNo)) {
+              state.history = [keepCardNo];
+              state.historyIndex = 0;
+            }
+          } else {
+            // Filter history to only include cards still in deck
+            state.history = state.history.filter((card) =>
+              newDeck.includes(card)
+            );
+            if (state.history.length === 0 && newDeck.length > 0) {
+              // Pick a random card to start
+              const randomIdx = Math.floor(Math.random() * newDeck.length);
+              state.history = [newDeck[randomIdx]];
+              state.historyIndex = 0;
+            } else {
+              state.historyIndex = Math.min(
+                state.historyIndex,
+                state.history.length - 1
+              );
+            }
+          }
+          // Update unvisited set
+          state.unvisited = new Set(newDeck);
+          state.history.forEach((card) => state.unvisited.delete(card));
         } else {
-          state.deck = newDeck;
-          state.i = state.shuffle
-            ? Math.floor(Math.random() * newDeck.length)
-            : 0;
+          // Sequential mode
+          if (keepCardNo != null && newDeck.includes(keepCardNo)) {
+            state.currentIndex = newDeck.indexOf(keepCardNo);
+          } else {
+            state.currentIndex = 0;
+          }
         }
       }
 
@@ -1818,9 +2170,17 @@
           }
           return;
         }
-        const position = Math.min(state.i + 1, state.deck.length);
+
+        const currentCard = getCurrentCard();
+        if (!currentCard) {
+          el.textContent = "Aucune carte sélectionnée.";
+          return;
+        }
+
         const prefix = state.showFavouritesOnly ? "Favori " : "Carte ";
-        el.textContent = `${prefix}${position} sur ${state.deck.length}`;
+
+        // Always show the actual card number (not position)
+        el.textContent = `${prefix}${currentCard} sur ${state.deck.length}`;
       }
 
       function setFlipped(on) {
@@ -1869,7 +2229,9 @@
       async function showCurrent(direction = "none") {
         if (state.isTransitioning) return;
 
-        const n = state.deck[state.i];
+        const n = getCurrentCard();
+        if (!n) return;
+
         const size = state.sizes[n];
         if (size && size.w > 0 && size.h > 0) {
           sizeStageForImage(size.w, size.h);
@@ -1904,6 +2266,14 @@
             loadFrontImage(n),
             loadBackImage(n),
           ]);
+
+          if (front && front.ok && front.width && front.height) {
+            state.sizes[n] = { w: front.width, h: front.height };
+            sizeStageForImage(front.width, front.height);
+          } else if (back && back.ok && back.width && back.height) {
+            state.sizes[n] = { w: back.width, h: back.height };
+            sizeStageForImage(back.width, back.height);
+          }
 
           frontImg.src = front.src;
           backImg.src = back.src;
@@ -1948,8 +2318,8 @@
           await swapImages();
           updateNavButtons();
           state.isTransitioning = false;
-          if (state.deck.length) {
-            storeCurrentCard(state.deck[state.i]);
+          if (n) {
+            storeCurrentCard(n);
           }
           preloadNearbyCards();
           return;
@@ -1982,71 +2352,206 @@
         state.isTransitioning = false;
         updateNavButtons();
 
-        if (state.deck.length) {
-          storeCurrentCard(state.deck[state.i]);
+        if (n) {
+          storeCurrentCard(n);
         }
 
         preloadNearbyCards();
       }
 
-      function preloadNearbyCards() {
-        const { deck, i } = state;
-        const preloadIndices = [];
+      function queuePreload(cardNo) {
+        if (!cardNo) return;
+        if (state.imagesLoaded.has(cardNo)) return;
+        if (state.preloading.has(cardNo)) return;
 
-        for (let offset = 1; offset <= PRELOAD_RADIUS; offset++) {
-          preloadIndices.push(
-            (i + offset) % deck.length,
-            (i - offset + deck.length) % deck.length
+        const startLoad = () => {
+          const frontPromise = loadFrontImage(cardNo).then((front) => {
+            if (front && front.ok && front.width && front.height) {
+              state.sizes[cardNo] = { w: front.width, h: front.height };
+            }
+          });
+          const backPromise = loadBackImage(cardNo);
+          Promise.all([frontPromise, backPromise])
+            .catch(() => {})
+            .finally(() => {
+              state.preloading.delete(cardNo);
+            });
+        };
+
+        state.preloading.add(cardNo);
+
+        if ("requestIdleCallback" in window) {
+          requestIdleCallback(
+            () => {
+              startLoad();
+            },
+            { timeout: 1500 }
           );
+        } else {
+          setTimeout(() => {
+            startLoad();
+          }, 120);
         }
+      }
 
-        preloadIndices.forEach((idx) => {
-          const k = deck[idx];
-          if (k && !state.imagesLoaded.has(k)) {
-            if ("requestIdleCallback" in window) {
-              requestIdleCallback(
-                () => {
-                  loadFrontImage(k);
-                  loadBackImage(k);
-                },
-                { timeout: 2000 }
-              );
-            } else {
-              setTimeout(() => {
-                loadFrontImage(k);
-                loadBackImage(k);
-              }, 100);
+      function preloadNearbyCards() {
+        // Preload based on what might be shown next
+        if (state.shuffle) {
+          // In shuffle mode, preload a few random unvisited cards
+          const unvisitedArray = Array.from(state.unvisited);
+          const toPreload = Math.min(PRELOAD_RADIUS, unvisitedArray.length);
+          for (let i = 0; i < toPreload; i++) {
+            const randomIdx = Math.floor(Math.random() * unvisitedArray.length);
+            queuePreload(unvisitedArray[randomIdx]);
+          }
+
+          // Also preload cards in history near current position
+          for (let offset = 1; offset <= PRELOAD_RADIUS; offset++) {
+            if (state.historyIndex - offset >= 0) {
+              queuePreload(state.history[state.historyIndex - offset]);
+            }
+            if (state.historyIndex + offset < state.history.length) {
+              queuePreload(state.history[state.historyIndex + offset]);
             }
           }
-        });
+        } else {
+          // In sequential mode, preload next and previous cards
+          for (let offset = 1; offset <= PRELOAD_RADIUS; offset++) {
+            const nextIdx = (state.currentIndex + offset) % state.deck.length;
+            const prevIdx =
+              (state.currentIndex - offset + state.deck.length) %
+              state.deck.length;
+            if (state.deck[nextIdx]) queuePreload(state.deck[nextIdx]);
+            if (state.deck[prevIdx]) queuePreload(state.deck[prevIdx]);
+          }
+        }
       }
 
       function nextCard() {
         if (state.isTransitioning) return;
-        if (!state.deck.length || state.deck.length === 1) return;
-        state.i = (state.i + 1) % state.deck.length;
-        showCurrent("next");
+        if (!state.deck.length) return;
+
+        if (state.shuffle) {
+          // Shuffle mode: use history
+
+          // Check if we're navigating forward in history
+          if (state.historyIndex < state.history.length - 1) {
+            // We have forward history, go to next in history
+            state.historyIndex++;
+            saveHistory();
+            showCurrent("next");
+            return;
+          }
+
+          // We're at the end of history, need to add a new card
+          let nextCardNo;
+
+          if (state.unvisited.size === 0) {
+            // All cards visited, reset unvisited set
+            state.unvisited = new Set(state.deck);
+            // Remove current card from unvisited
+            const current = getCurrentCard();
+            if (current) state.unvisited.delete(current);
+          }
+
+          if (state.unvisited.size > 0) {
+            // Pick a random unvisited card
+            const unvisitedArray = Array.from(state.unvisited);
+            const randomIdx = Math.floor(Math.random() * unvisitedArray.length);
+            nextCardNo = unvisitedArray[randomIdx];
+          } else {
+            // Edge case: only one card in deck
+            nextCardNo = state.deck[0];
+          }
+
+          if (nextCardNo) {
+            // Add to history (limit to MAX_HISTORY)
+            state.history.push(nextCardNo);
+            if (state.history.length > MAX_HISTORY) {
+              state.history.shift();
+              state.historyIndex = MAX_HISTORY - 1;
+            } else {
+              state.historyIndex++;
+            }
+
+            // Remove from unvisited
+            state.unvisited.delete(nextCardNo);
+
+            saveHistory();
+            showCurrent("next");
+          }
+        } else {
+          // Sequential mode: just go to next in deck
+          state.currentIndex = (state.currentIndex + 1) % state.deck.length;
+          showCurrent("next");
+        }
       }
 
       function prevCard() {
         if (state.isTransitioning) return;
-        if (!state.deck.length || state.deck.length === 1) return;
-        state.i = (state.i - 1 + state.deck.length) % state.deck.length;
-        showCurrent("prev");
+        if (!state.deck.length) return;
+
+        if (state.shuffle) {
+          // Shuffle mode: go back in history
+          if (state.historyIndex > 0) {
+            state.historyIndex--;
+            showCurrent("prev");
+          }
+        } else {
+          // Sequential mode: always enabled, go to previous in deck
+          state.currentIndex =
+            (state.currentIndex - 1 + state.deck.length) % state.deck.length;
+          showCurrent("prev");
+        }
       }
 
       function toggleShuffle() {
+        const wasShuffled = state.shuffle;
         state.shuffle = !state.shuffle;
         localStorage.setItem("fc_shuffle", JSON.stringify(state.shuffle));
-        const keep = state.deck[state.i];
-        rebuildDeck(keep);
+
+        if (state.shuffle) {
+          // Switching TO shuffle mode
+          const currentCard = getCurrentCard();
+
+          // Load saved history or start fresh
+          const savedHistory = loadHistory();
+          if (
+            savedHistory.length > 0 &&
+            savedHistory[savedHistory.length - 1] === currentCard
+          ) {
+            // Use saved history if it ends with current card
+            state.history = savedHistory;
+            state.historyIndex = savedHistory.length - 1;
+          } else {
+            // Start fresh history with current card
+            state.history = currentCard ? [currentCard] : [];
+            state.historyIndex = currentCard ? 0 : -1;
+          }
+
+          // Initialize unvisited set
+          state.unvisited = new Set(state.deck);
+          state.history.forEach((card) => state.unvisited.delete(card));
+
+          saveHistory();
+        } else {
+          // Switching TO sequential mode
+          clearHistory(); // Clear saved history
+          const currentCard = getCurrentCard();
+          if (currentCard) {
+            state.currentIndex = state.deck.indexOf(currentCard);
+            if (state.currentIndex === -1) state.currentIndex = 0;
+          }
+        }
+
         updateShuffleUI();
-        showCurrent();
+        updateCounter();
+        updateNavButtons();
       }
 
       function toggleFavouritesOnly() {
         state.showFavouritesOnly = !state.showFavouritesOnly;
-        const keep = state.deck[state.i];
+        const keep = getCurrentCard();
         rebuildDeck(keep);
         updateFavouritesUI();
 
@@ -2073,11 +2578,19 @@
       }
 
       function updateNavButtons() {
-        const disable = state.deck.length <= 1;
         const prev = qs("#prevBtn");
         const next = qs("#nextBtn");
-        if (prev) prev.disabled = disable;
-        if (next) next.disabled = disable;
+
+        if (state.shuffle) {
+          // In shuffle mode: disable prev only if at beginning of history
+          if (prev) prev.disabled = state.historyIndex <= 0;
+        } else {
+          // In sequential mode: prev is always enabled (wraps around)
+          if (prev) prev.disabled = false;
+        }
+
+        // Next is disabled only if deck is empty
+        if (next) next.disabled = state.deck.length === 0;
       }
 
       function cycleTimer() {
@@ -2086,7 +2599,7 @@
         state.filterTimer = timerStates[nextIndex];
         updateTimerUI();
 
-        const keep = state.deck[state.i];
+        const keep = getCurrentCard();
         rebuildDeck(keep);
         if (!state.deck.length) {
           qs("#counter").textContent =
@@ -2109,7 +2622,7 @@
         state.filterDifficulty = difficultyStates[nextIndex];
         updateDifficultyUI();
 
-        const keep = state.deck[state.i];
+        const keep = getCurrentCard();
         rebuildDeck(keep);
         if (!state.deck.length) {
           qs("#counter").textContent =
@@ -2138,9 +2651,11 @@
         const bookmarkBtn = qs("#bookmarkBtn");
         if (bookmarkBtn) {
           bookmarkBtn.addEventListener("click", (e) => {
-            const currentCard = state.deck[state.i];
-            toggleFavourite(currentCard);
-            updateBookmarkButton();
+            const currentCard = getCurrentCard();
+            if (currentCard) {
+              toggleFavourite(currentCard);
+              updateBookmarkButton();
+            }
           });
         }
 
@@ -2230,16 +2745,13 @@
             toggleFavouritesOnly();
           } else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) {
             // Keyboard shortcut for bookmarking
-            const currentCard = state.deck[state.i];
-            toggleFavourite(currentCard);
-            updateBookmarkButton();
+            const currentCard = getCurrentCard();
+            if (currentCard) {
+              toggleFavourite(currentCard);
+              updateBookmarkButton();
+            }
           }
         });
-
-        // Freeze layout after initial render: do not respond to resize/zoom.
-        // Intentionally disable dynamic resizing so zooming does not change layout.
-        // If adaptive behavior is needed later, re-enable with care.
-        // window.addEventListener("resize", () => { /* disabled on purpose */ });
       }
 
       (async function init() {
