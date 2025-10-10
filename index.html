@@ -1675,6 +1675,14 @@
         const isFavourite = favourites.has(currentCard);
         btn.classList.toggle("active", isFavourite);
         btn.setAttribute("aria-pressed", String(isFavourite));
+        const textEl = btn.querySelector(".btn-text");
+        if (textEl) {
+          textEl.textContent = isFavourite ? "Retirer" : "Ajouter";
+        }
+        btn.setAttribute(
+          "aria-label",
+          isFavourite ? "Retirer des favoris" : "Ajouter aux favoris"
+        );
       }
 
       // History management for shuffle mode
