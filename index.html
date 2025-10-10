@@ -1758,9 +1758,37 @@
         filterTimer: "all",
         filterDifficulty: "all",
         formats: null,
+        shuffleQueue: [],
       };
 
       const LAST_CARD_KEY_PREFIX = "fc_last_card_";
+
+      function shuffleArray(items) {
+        const arr = items.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function ensureShuffleQueue(currentCard) {
+        if (!state.shuffle) return;
+
+        if (!Array.isArray(state.shuffleQueue)) {
+          state.shuffleQueue = [];
+        }
+
+        if (state.shuffleQueue.length === 0) {
+          if (state.unvisited.size === 0) {
+            state.unvisited = new Set(state.deck);
+            if (currentCard) state.unvisited.delete(currentCard);
+          }
+
+          const pool = Array.from(state.unvisited);
+          state.shuffleQueue = shuffleArray(pool);
+        }
+      }
 
       function getStoredCard(chapter) {
         if (!chapter) return null;
@@ -1884,6 +1912,7 @@
         state.historyIndex = -1;
         state.currentIndex = 0;
         state.unvisited.clear();
+        state.shuffleQueue = [];
         state.imagesLoaded.clear();
         state.preloading.clear();
         state.formats = formatCacheByBase.get(state.basePath) || null;
@@ -1930,11 +1959,13 @@
             // Update unvisited set
             state.unvisited = new Set(state.deck);
             savedHistory.forEach((card) => state.unvisited.delete(card));
+            state.shuffleQueue = [];
           } else if (storedCard && state.deck.includes(storedCard)) {
             state.history = [storedCard];
             state.historyIndex = 0;
             state.unvisited = new Set(state.deck);
             state.unvisited.delete(storedCard);
+            state.shuffleQueue = [];
           } else {
             // Start with a random card
             const randomIdx = Math.floor(Math.random() * state.deck.length);
@@ -1943,6 +1974,7 @@
             state.historyIndex = 0;
             state.unvisited = new Set(state.deck);
             state.unvisited.delete(firstCard);
+            state.shuffleQueue = [];
           }
         } else {
           // Sequential mode
@@ -1953,6 +1985,7 @@
           }
         }
 
+        ensureShuffleQueue(getCurrentCard());
         await showCurrent();
       }
 
@@ -2175,6 +2208,7 @@
           // Update unvisited set
           state.unvisited = new Set(newDeck);
           state.history.forEach((card) => state.unvisited.delete(card));
+          state.shuffleQueue = [];
         } else {
           // Sequential mode
           if (keepCardNo != null && newDeck.includes(keepCardNo)) {
@@ -2473,27 +2507,19 @@
           }
 
           // We're at the end of history, need to add a new card
-          let nextCardNo;
+          const current = getCurrentCard();
+          let nextCardNo = null;
 
-          if (state.unvisited.size === 0) {
-            // All cards visited, reset unvisited set
-            state.unvisited = new Set(state.deck);
-            // Remove current card from unvisited
-            const current = getCurrentCard();
-            if (current) state.unvisited.delete(current);
-          }
+          ensureShuffleQueue(current);
 
-          if (state.unvisited.size > 0) {
-            // Pick a random unvisited card
-            const unvisitedArray = Array.from(state.unvisited);
-            const randomIdx = Math.floor(Math.random() * unvisitedArray.length);
-            nextCardNo = unvisitedArray[randomIdx];
-          } else {
-            // Edge case: only one card in deck
+          if (state.shuffleQueue.length > 0) {
+            nextCardNo = state.shuffleQueue.pop();
+          } else if (state.deck.length > 0) {
+            // Edge case: only one card or queue exhausted unexpectedly
             nextCardNo = state.deck[0];
           }
 
-          if (nextCardNo) {
+          if (nextCardNo != null) {
             // Add to history (limit to MAX_HISTORY)
             state.history.push(nextCardNo);
             if (state.history.length > MAX_HISTORY) {
@@ -2505,6 +2531,7 @@
 
             // Remove from unvisited
             state.unvisited.delete(nextCardNo);
+            ensureShuffleQueue(nextCardNo);
 
             saveHistory();
             showCurrent("next");
@@ -2563,6 +2590,7 @@
           // Initialize unvisited set
           state.unvisited = new Set(state.deck);
           state.history.forEach((card) => state.unvisited.delete(card));
+          state.shuffleQueue = [];
 
           saveHistory();
         } else {
@@ -2573,8 +2601,10 @@
             state.currentIndex = state.deck.indexOf(currentCard);
             if (state.currentIndex === -1) state.currentIndex = 0;
           }
+          state.shuffleQueue = [];
         }
 
+        ensureShuffleQueue(getCurrentCard());
         updateShuffleUI();
         updateCounter();
         updateNavButtons();
