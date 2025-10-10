@@ -679,6 +679,23 @@
         background: var(--hover-bg);
       }
 
+      .random-toggle.disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+        color: var(--muted);
+        background: var(--pill-bg);
+        border-color: var(--border);
+      }
+
+      .random-toggle.disabled:hover {
+        border-color: var(--border);
+        background: var(--pill-bg);
+      }
+
+      .random-toggle.disabled .random-icon svg {
+        stroke: currentColor;
+      }
+
       .random-toggle.active,
       .favourites-toggle.active {
         background: var(--fg);
@@ -2185,10 +2202,14 @@
           return;
         }
 
-        const prefix = state.showFavouritesOnly ? "Favori " : "Carte ";
-
-        // Always show the actual card number (not position)
-        el.textContent = `${prefix}${currentCard} sur ${state.deck.length}`;
+        if (state.showFavouritesOnly) {
+          const position = state.deck.indexOf(currentCard);
+          const displayNumber =
+            position >= 0 ? position + 1 : currentCard || "?";
+          el.textContent = `Favori ${displayNumber} sur ${state.deck.length}`;
+        } else {
+          el.textContent = `Carte ${currentCard} sur ${state.deck.length}`;
+        }
       }
 
       function setFlipped(on) {
@@ -2514,7 +2535,9 @@
       }
 
       function toggleShuffle() {
-        const wasShuffled = state.shuffle;
+        if (state.showFavouritesOnly && !state.shuffle) {
+          return;
+        }
         state.shuffle = !state.shuffle;
         localStorage.setItem("fc_shuffle", JSON.stringify(state.shuffle));
 
@@ -2559,9 +2582,16 @@
 
       function toggleFavouritesOnly() {
         state.showFavouritesOnly = !state.showFavouritesOnly;
-        const keep = getCurrentCard();
+        let keep = getCurrentCard();
+
+        if (state.showFavouritesOnly && state.shuffle) {
+          toggleShuffle();
+          keep = getCurrentCard();
+        }
+
         rebuildDeck(keep);
         updateFavouritesUI();
+        updateShuffleUI();
 
         if (!state.deck.length) {
           qs("#counter").textContent = "Aucun favori disponible.";
@@ -2574,8 +2604,13 @@
 
       function updateShuffleUI() {
         const toggle = qs("#randomToggle");
+        if (!toggle) return;
+        const disabled = state.showFavouritesOnly;
         toggle.classList.toggle("active", state.shuffle);
+        toggle.classList.toggle("disabled", disabled);
         toggle.setAttribute("aria-checked", String(state.shuffle));
+        toggle.setAttribute("aria-disabled", String(disabled));
+        toggle.setAttribute("tabindex", disabled ? "-1" : "0");
       }
 
       function updateFavouritesUI() {
@@ -2672,13 +2707,19 @@
 
         // Random toggle
         const randomToggle = qs("#randomToggle");
-        randomToggle.addEventListener("click", toggleShuffle);
-        randomToggle.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
+        if (randomToggle) {
+          randomToggle.addEventListener("click", () => {
+            if (randomToggle.classList.contains("disabled")) return;
             toggleShuffle();
-          }
-        });
+          });
+          randomToggle.addEventListener("keydown", (e) => {
+            if (randomToggle.classList.contains("disabled")) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleShuffle();
+            }
+          });
+        }
 
         // Favourites toggle
         const favouritesToggle = qs("#favouritesToggle");
@@ -2747,7 +2788,12 @@
             if (!state.isTransitioning) {
               setFlipped(!state.flipped);
             }
-          } else if (e.key.toLowerCase() === "r" && !e.ctrlKey && !e.metaKey) {
+          } else if (
+            e.key.toLowerCase() === "r" &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !state.showFavouritesOnly
+          ) {
             toggleShuffle();
           } else if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey) {
             toggleFavouritesOnly();
