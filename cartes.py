@@ -1,5 +1,5 @@
 """
-Extrait des flashcards recto-verso d'un PDF en PNGs séquentiels + manifest.json.
+Extrait des flashcards recto-verso d'un PDF en WebP (par défaut) séquentiels + manifest.json.
 
 Nouveautés :
 - Sélection interactive du PDF dans un répertoire (par défaut: dossier "flashcards" à côté du script).
@@ -27,7 +27,7 @@ import os
 import sys
 import json
 import colorsys
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional, Dict, Any, List
 
 import numpy as np
 from PIL import Image
@@ -515,7 +515,7 @@ def classify_timer_color(rgb: Optional[Tuple[int, int, int]]) -> ColorName:
     return _classify_hsv(h, s, v, TIMER_CANDIDATES)
 
 
-def ask_user_to_choose_pdf(search_dir: str) -> str:
+def ask_user_to_choose_pdf(search_dir: str) -> List[str]:
     try:
         entries = os.listdir(search_dir)
     except Exception as e:
@@ -526,67 +526,34 @@ def ask_user_to_choose_pdf(search_dir: str) -> str:
         fail(f"Aucun fichier .pdf trouvé dans : {os.path.abspath(search_dir)}")
 
     print("\nPDFs disponibles :")
+    print("  [0] Tous les PDFs")
     for i, name in enumerate(pdfs, 1):
         print(f"  [{i}] {name}")
 
     while True:
-        choice = input("\nEntrez le numéro du PDF à traiter (ou 'q' pour quitter) : ").strip()
+        choice = input("\nEntrez le numéro du PDF ([0] pour tous, 'q' pour quitter) : ").strip()
         if choice.lower() in {"q", "quit", "exit"}:
             fail("Annulé par l'utilisateur.", code=0)
         if not choice.isdigit():
             print("Veuillez entrer un numéro valide.")
             continue
         idx = int(choice)
+        if idx == 0:
+            print("Sélection : tous les PDFs.")
+            return [
+                os.path.abspath(os.path.join(search_dir, name))
+                for name in pdfs
+            ]
         if 1 <= idx <= len(pdfs):
             selected = pdfs[idx - 1]
             in_path = os.path.abspath(os.path.join(search_dir, selected))
             print(f"Sélectionné : {selected}")
-            return in_path
+            return [in_path]
         else:
-            print(f"Veuillez entrer un nombre entre 1 et {len(pdfs)}.")
+            print(f"Veuillez entrer un nombre entre 0 et {len(pdfs)}.")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Découpe de cartes PDF en PNG (sélection interactive, trim, fond transparent) + manifest.json."
-    )
-    # Par défaut, chercher dans le dossier 'flashcards' à côté de ce script
-    default_search = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flashcards")
-    parser.add_argument(
-        "--search-dir",
-        default=default_search,
-        help="Répertoire où chercher les PDFs (défaut: dossier 'flashcards' à côté du script).",
-    )
-    parser.add_argument("--dpi", type=int, default=300, help="DPI de rendu (défaut 300).")
-    parser.add_argument("--white-threshold", type=int, default=220, help="Seuil 0–255 pour 'blanc' (défaut 220).")
-    parser.add_argument("--band-frac", type=float, default=0.10, help="Épaisseur de bande centrale (trim) 0–0.5.")
-    parser.add_argument("--max-trim-frac", type=float, default=0.08, help="Rognage max par côté (trim) en fraction.")
-    parser.add_argument("--white-frac-required", type=float, default=0.98, help="Part de blanc requise (trim).")
-    parser.add_argument("--barrier-dilate", type=int, default=1, help="Renforcement de la barrière (dilatation px).")
-
-    # Paramètres de sampling des couleurs
-    parser.add_argument("--border-offset", type=int, default=6, help="Décalage depuis le bord haut pour lire la bordure.")
-    parser.add_argument("--border-band", type=int, default=6, help="Hauteur de bande pour la bordure.")
-    parser.add_argument(
-        "--timer-x", type=int, default=1100, help="Coordonnée X (référence) du centre du timer (origine bas-gauche)."
-    )
-    parser.add_argument(
-        "--timer-y", type=int, default=725, help="Coordonnée Y (référence) du centre du timer (origine bas-gauche)."
-    )
-    parser.add_argument("--timer-ref-w", type=int, default=1177, help="Largeur de référence pour le timer.")
-    parser.add_argument("--timer-ref-h", type=int, default=813, help="Hauteur de référence pour le timer.")
-    parser.add_argument("--timer-radius", type=int, default=12, help="Rayon de sampling autour du timer.")
-
-    g = parser.add_mutually_exclusive_group()
-    g.add_argument("--transparent", dest="transparent", action="store_true", help="Active le fond transparent.")
-    g.add_argument(
-        "--no-transparent", dest="transparent", action="store_false", help="Désactive le fond transparent."
-    )
-    parser.set_defaults(transparent=True)
-    args = parser.parse_args()
-
-    in_path = ask_user_to_choose_pdf(args.search_dir)
-
+def process_pdf(in_path: str, args: argparse.Namespace) -> None:
     base_name = os.path.splitext(os.path.basename(in_path))[0]
     out_dir = os.path.join(os.path.dirname(in_path), base_name)
     if os.path.exists(out_dir) and not os.path.isdir(out_dir):
@@ -600,12 +567,22 @@ def main():
     if doc.page_count == 0:
         fail("Empty PDF: no pages.")
 
-    print(f"\nFichier d'entrée : {in_path}")
+    print(f"\n=== Traitement de : {in_path} ===")
     print(f"Dossier de sortie : {out_dir}")
     print(f"Pages : {doc.page_count} | DPI : {args.dpi} | white-threshold : {args.white_threshold}")
-    print(f"Transparent: {args.transparent} | barrier-dilate: {args.barrier_dilate}\n")
+    if args.output_format == "webp":
+        print(
+            "Transparent: {} | barrier-dilate: {} | format: webp (lossless: {}, quality: {}, method: {})".format(
+                args.transparent, args.barrier_dilate, args.webp_lossless, args.webp_quality, args.webp_method
+            )
+        )
+    else:
+        print(
+            "Transparent: {} | barrier-dilate: {} | format: png".format(
+                args.transparent, args.barrier_dilate
+            )
+        )
 
-    # Structures manifest
     cards_by_border = {"green": [], "orange": [], "red": [], "purple": [], "unknown": []}
     cards_by_timer = {"green": [], "orange": [], "red": [], "none": [], "unknown": []}
     per_card: Dict[str, Dict[str, Any]] = {}
@@ -633,7 +610,6 @@ def main():
             front_img = left_rows[row_idx]
             back_img = right_rows[row_idx]
 
-            # 1) Trim des fines lignes blanches
             front_img = trim_white_edges_midlines(
                 front_img,
                 white_threshold=args.white_threshold,
@@ -649,7 +625,6 @@ def main():
                 white_frac_required=args.white_frac_required,
             )
 
-            # 2) Transparence du blanc EXTERNE (coins arrondis)
             if args.transparent:
                 front_img = make_external_white_transparent(
                     front_img, white_threshold=args.white_threshold, barrier_dilate=args.barrier_dilate
@@ -663,14 +638,13 @@ def main():
                 if back_img.mode != "RGB":
                     back_img = back_img.convert("RGB")
 
-            # 3) Détection couleurs (front uniquement)
             border_rgb = sample_border_color(
                 front_img, offset_px=args.border_offset, band_px=args.border_band, half_width_px=2
             )
             border_color = classify_border_color(border_rgb)
 
             if border_color == "purple":
-                timer_color: ColorName = "none"  # pas de timer sur les violettes
+                timer_color: ColorName = "none"
             else:
                 timer_rgb = sample_timer_color(
                     front_img,
@@ -682,19 +656,28 @@ def main():
                 )
                 timer_color = classify_timer_color(timer_rgb)
 
-            # 4) Sauvegarde des images
-            front_name = os.path.join(out_dir, f"front{seq_index}.png")
-            back_name = os.path.join(out_dir, f"back{seq_index}.png")
-            front_img.save(front_name, format="PNG", optimize=True)
-            back_img.save(back_name, format="PNG", optimize=True)
+            ext = args.output_format
+            front_name = os.path.join(out_dir, f"front{seq_index}.{ext}")
+            back_name = os.path.join(out_dir, f"back{seq_index}.{ext}")
+
+            if ext == "webp":
+                save_kwargs = {"format": "WEBP", "method": args.webp_method}
+                if args.webp_lossless:
+                    save_kwargs["lossless"] = True
+                else:
+                    save_kwargs["quality"] = args.webp_quality
+            else:
+                save_kwargs = {"format": "PNG", "optimize": True}
+
+            front_img.save(front_name, **save_kwargs)
+            back_img.save(back_name, **save_kwargs)
 
             total_fronts += 1
             total_backs += 1
             print(
-                f"  Saved front{seq_index}.png & back{seq_index}.png | border={border_color} | timer={timer_color}"
+                f"  Saved front{seq_index}.{ext} & back{seq_index}.{ext} | border={border_color} | timer={timer_color}"
             )
 
-            # 5) Alimente le manifest
             num = seq_index
             cards_by_border.get(border_color, cards_by_border["unknown"]).append(num)
             cards_by_timer.get(timer_color, cards_by_timer["unknown"]).append(num)
@@ -708,7 +691,6 @@ def main():
         if total_fronts - base_fronts != 4 or total_backs - base_backs != 4:
             fail("Internal error: did not produce exactly 4 fronts and 4 backs for this page.")
 
-    # 6) Écrit le manifest.json
     manifest = {
         "cards_by_border": {k: sorted(v) for k, v in cards_by_border.items() if v},
         "cards_by_timer": {k: sorted(v) for k, v in cards_by_timer.items() if v},
@@ -719,8 +701,81 @@ def main():
         json.dump(manifest, f, ensure_ascii=False, indent=2)
 
     print(
-        f"\nDone. Wrote {total_fronts} fronts and {total_backs} backs to: {out_dir}\nManifest: {manifest_path}"
+        f"\nDone. Wrote {total_fronts} fronts and {total_backs} backs to: {out_dir}\nManifest: {manifest_path}\n"
     )
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Découpe de cartes PDF en images (WebP par défaut, options trim, fond transparent) + manifest.json."
+    )
+    # Par défaut, chercher dans le dossier 'flashcards' à côté de ce script
+    default_search = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flashcards")
+    parser.add_argument(
+        "--search-dir",
+        default=default_search,
+        help="Répertoire où chercher les PDFs (défaut: dossier 'flashcards' à côté du script).",
+    )
+    parser.add_argument("--dpi", type=int, default=300, help="DPI de rendu (défaut 300).")
+    parser.add_argument("--white-threshold", type=int, default=220, help="Seuil 0–255 pour 'blanc' (défaut 220).")
+    parser.add_argument("--band-frac", type=float, default=0.10, help="Épaisseur de bande centrale (trim) 0–0.5.")
+    parser.add_argument("--max-trim-frac", type=float, default=0.08, help="Rognage max par côté (trim) en fraction.")
+    parser.add_argument("--white-frac-required", type=float, default=0.98, help="Part de blanc requise (trim).")
+    parser.add_argument("--barrier-dilate", type=int, default=1, help="Renforcement de la barrière (dilatation px).")
+
+    # Paramètres de sampling des couleurs
+    parser.add_argument("--border-offset", type=int, default=6, help="Décalage depuis le bord haut pour lire la bordure.")
+    parser.add_argument("--border-band", type=int, default=6, help="Hauteur de bande pour la bordure.")
+    parser.add_argument(
+        "--timer-x", type=int, default=1100, help="Coordonnée X (référence) du centre du timer (origine bas-gauche)."
+    )
+    parser.add_argument(
+        "--timer-y", type=int, default=725, help="Coordonnée Y (référence) du centre du timer (origine bas-gauche)."
+    )
+    parser.add_argument("--timer-ref-w", type=int, default=1177, help="Largeur de référence pour le timer.")
+    parser.add_argument("--timer-ref-h", type=int, default=813, help="Hauteur de référence pour le timer.")
+    parser.add_argument("--timer-radius", type=int, default=12, help="Rayon de sampling autour du timer.")
+    parser.add_argument(
+        "--output-format",
+        choices=["png", "webp"],
+        default="webp",
+        help="Format des images de sortie (défaut: webp).",
+    )
+    parser.add_argument(
+        "--webp-quality", type=int, default=88, help="Qualité WebP lossy 0-100 (défaut 88)."
+    )
+    parser.add_argument(
+        "--webp-method", type=int, default=6, help="Effort d'encodage WebP 0-6 (défaut 6 = max)."
+    )
+    parser.add_argument(
+        "--webp-lossless",
+        action="store_true",
+        help="Active l'encodage WebP lossless (ignore la qualité lossy).",
+    )
+
+    g = parser.add_mutually_exclusive_group()
+    g.add_argument("--transparent", dest="transparent", action="store_true", help="Active le fond transparent.")
+    g.add_argument(
+        "--no-transparent", dest="transparent", action="store_false", help="Désactive le fond transparent."
+    )
+    parser.set_defaults(transparent=True)
+    args = parser.parse_args()
+    args.output_format = args.output_format.lower()
+    if args.output_format == "webp":
+        args.webp_quality = max(0, min(100, args.webp_quality))
+        args.webp_method = max(0, min(6, args.webp_method))
+    else:
+        if args.webp_lossless:
+            print("Attention: --webp-lossless ignoré car le format de sortie est PNG.")
+            args.webp_lossless = False
+
+    selected_paths = ask_user_to_choose_pdf(args.search_dir)
+
+    if len(selected_paths) > 1:
+        for idx, in_path in enumerate(selected_paths, start=1):
+            print(f"\n--- Lot {idx}/{len(selected_paths)} ---")
+            process_pdf(in_path, args)
+    else:
+        process_pdf(selected_paths[0], args)
 
 
 if __name__ == "__main__":

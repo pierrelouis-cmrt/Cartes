@@ -1058,6 +1058,7 @@
           transform: translateY(0);
         }
       }
+
     </style>
   </head>
   <body>
@@ -1412,11 +1413,65 @@
       }
 
       function probeImage(url) {
-        return loadImage(url + "?probe=" + Date.now(), false);
+        const sep = url.includes("?") ? "&" : "?";
+        return loadImage(`${url}${sep}probe=${Date.now()}`, false);
       }
 
-      const frontURL = (n) => `${state.basePath}/front${n}.png`;
-      const backURL = (n) => `${state.basePath}/back${n}.png`;
+      const IMAGE_FORMATS = ["webp", "png"];
+      const imageFormatCache = new Map();
+
+      function imageFormatCacheKey(basePath, prefix, n) {
+        return `${basePath}|${prefix}|${n}`;
+      }
+
+      function buildImageURL(basePath, prefix, n, ext) {
+        return `${basePath}/${prefix}${n}.${ext}`;
+      }
+
+      async function loadCardImage(prefix, n, options = {}) {
+        const {
+          basePath = state.basePath,
+          probe = false,
+          useCache = true,
+        } = options;
+
+        if (!basePath) {
+          return { ok: false, src: "" };
+        }
+
+        const key = imageFormatCacheKey(basePath, prefix, n);
+        const cachedExt = imageFormatCache.get(key);
+        const fallbackOrder = IMAGE_FORMATS.slice();
+        const candidates = cachedExt
+          ? [cachedExt, ...fallbackOrder.filter((ext) => ext !== cachedExt)]
+          : fallbackOrder;
+
+        let lastTried = buildImageURL(basePath, prefix, n, candidates[0]);
+
+        for (const ext of candidates) {
+          const url = buildImageURL(basePath, prefix, n, ext);
+          lastTried = url;
+          const result = probe
+            ? await probeImage(url)
+            : await loadImage(url, useCache);
+          if (result.ok) {
+            imageFormatCache.set(key, ext);
+            result.src = url;
+            result.ext = ext;
+            return result;
+          }
+        }
+
+        return { ok: false, src: lastTried };
+      }
+
+      function loadFrontImage(n, options) {
+        return loadCardImage("front", n, options);
+      }
+
+      function loadBackImage(n, options) {
+        return loadCardImage("back", n, options);
+      }
 
       function shuffleInPlace(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
@@ -1532,8 +1587,12 @@
             n < Math.min(start + batchSize, MAX_CHAPTERS_PROBE + 1);
             n++
           ) {
-            const p = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}/front1.png`;
-            batch.push(probeImage(p).then((r) => (r.ok ? n : null)));
+            const basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
+            batch.push(
+              loadFrontImage(1, { basePath, probe: true }).then((r) =>
+                r.ok ? n : null
+              )
+            );
           }
           const results = await Promise.all(batch);
           const validChapters = results.filter((n) => n !== null);
@@ -1625,8 +1684,8 @@
         while (left <= right) {
           const mid = Math.floor((left + right) / 2);
           const [pf, pb] = await Promise.all([
-            probeImage(frontURL(mid)),
-            probeImage(backURL(mid)),
+            loadFrontImage(mid, { probe: true }),
+            loadBackImage(mid, { probe: true }),
           ]);
 
           if (pf.ok && pb.ok) {
@@ -1643,7 +1702,7 @@
           for (let k = 1; k <= lastValid; k++) {
             if (!state.sizes[k]) {
               checks.push(
-                probeImage(frontURL(k)).then((pf) => {
+                loadFrontImage(k, { probe: true }).then((pf) => {
                   if (pf.ok) {
                     state.sizes[k] = { w: pf.width, h: pf.height };
                   }
@@ -1842,8 +1901,8 @@
           backImg.classList.remove("loaded");
 
           const [front, back] = await Promise.all([
-            loadImage(frontURL(n)),
-            loadImage(backURL(n)),
+            loadFrontImage(n),
+            loadBackImage(n),
           ]);
 
           frontImg.src = front.src;
@@ -1947,15 +2006,15 @@
             if ("requestIdleCallback" in window) {
               requestIdleCallback(
                 () => {
-                  loadImage(frontURL(k));
-                  loadImage(backURL(k));
+                  loadFrontImage(k);
+                  loadBackImage(k);
                 },
                 { timeout: 2000 }
               );
             } else {
               setTimeout(() => {
-                loadImage(frontURL(k));
-                loadImage(backURL(k));
+                loadFrontImage(k);
+                loadBackImage(k);
               }, 100);
             }
           }
