@@ -57,6 +57,7 @@
         --skeleton-bg: #f3f4f6;
         --skeleton-shine: #ffffff;
         --green: #22c55e;
+        --yellow: #facc15;
         --orange: #fb923c;
         --red: #ef4444;
         --gray: #d1d5db;
@@ -88,6 +89,7 @@
           --skeleton-bg: #111418;
           --skeleton-shine: #1a1f26;
           --gray: #374151;
+          --yellow: #facc15;
           --gold: #f59e0b;
           --gold-hover: #fbbf24;
           --glass: rgba(11, 15, 20, 0.6);
@@ -632,11 +634,21 @@
         box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
       }
 
+      .traffic-pills[data-level="yellow"] .pill:nth-child(1),
       .traffic-pills[data-level="orange"] .pill:nth-child(1) {
         background: var(--green);
       }
 
+      .traffic-pills[data-level="yellow"] .pill:nth-child(2),
       .traffic-pills[data-level="orange"] .pill:nth-child(2) {
+        background: var(--yellow);
+      }
+
+      .traffic-pills[data-level="yellow"] .pill:nth-child(2) {
+        box-shadow: 0 0 8px rgba(250, 204, 21, 0.4);
+      }
+
+      .traffic-pills[data-level="orange"] .pill:nth-child(3) {
         background: var(--orange);
         box-shadow: 0 0 8px rgba(251, 146, 60, 0.4);
       }
@@ -1208,6 +1220,7 @@
                   tabindex="0"
                   aria-label="Filtre timer"
                 >
+                  <div class="pill"></div>
                   <div class="pill"></div>
                   <div class="pill"></div>
                 </div>
@@ -1827,7 +1840,7 @@
       }
 
       // Timer states cycle
-      const timerStates = ["all", "green", "orange"];
+      const timerStates = ["all", "green", "yellow", "orange"];
       const difficultyStates = ["all", "green", "orange", "red"];
 
       function showSkeleton() {

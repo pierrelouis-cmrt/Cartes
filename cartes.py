@@ -9,7 +9,7 @@ Nouveautés :
   en conservant le blanc INTERNE de la carte (flood-fill depuis les bords).
 - Génération d'un manifest.json qui tague chaque carte (front/back partage les mêmes tags) :
   * Couleur de bordure (vert, orange, rouge, violet) détectée au milieu du bord supérieur.
-  * Couleur du timer (vert, orange, rouge) détectée autour de la position ~ (1100, 725)
+  * Couleur du timer (vert, jaune, orange, rouge) détectée autour de la position ~ (1100, 725)
     en coordonnées origine en bas-gauche pour une carte de référence 1177×813.
     Les cartes violettes n'ont pas de timer (timer = none).
 
@@ -320,7 +320,8 @@ BORDER_CANDIDATES: Dict[ColorName, float] = {
 
 TIMER_CANDIDATES: Dict[ColorName, float] = {
     "red": 0.0,
-    "orange": 30.0,
+    "orange": 33.0,
+    "yellow": 54.0,
     "green": 120.0,
 }
 
@@ -512,6 +513,18 @@ def classify_timer_color(rgb: Optional[Tuple[int, int, int]]) -> ColorName:
     if rgb is None:
         return "unknown"
     h, s, v = _rgb_to_hsv_deg(rgb)
+    # Low saturation/value -> no reliable timer detected
+    if s < 0.15 or v < 0.18:
+        return "unknown"
+    # Empirical hue bands from sampled timer colours
+    if 75.0 <= h <= 160.0:
+        return "green"
+    if 45.0 <= h < 75.0:
+        return "yellow"
+    if 25.0 <= h < 45.0:
+        return "orange"
+    if h < 25.0 or h >= 340.0:
+        return "red"
     return _classify_hsv(h, s, v, TIMER_CANDIDATES)
 
 
@@ -584,7 +597,7 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
         )
 
     cards_by_border = {"green": [], "orange": [], "red": [], "purple": [], "unknown": []}
-    cards_by_timer = {"green": [], "orange": [], "red": [], "none": [], "unknown": []}
+    cards_by_timer = {"green": [], "yellow": [], "orange": [], "red": [], "none": [], "unknown": []}
     per_card: Dict[str, Dict[str, Any]] = {}
 
     seq_index = 1
