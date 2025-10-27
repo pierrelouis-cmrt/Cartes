@@ -1,7 +1,7 @@
 {
   "chapter": "ch5_cartes",
   "image_format": "webp",
-  "total_cards": 20,
+  "total_cards": 32,
   "cards_by_border": {
     "green": [
       1,
@@ -19,15 +19,29 @@
       15,
       18,
       19,
-      20
+      20,
+      21,
+      22,
+      23,
+      25,
+      26,
+      28,
+      29,
+      30
     ],
     "orange": [
       9,
       10,
-      17
+      17,
+      24,
+      31
     ],
     "red": [
-      16
+      16,
+      27
+    ],
+    "purple": [
+      32
     ]
   },
   "cards_by_timer": {
@@ -44,7 +58,13 @@
       13,
       14,
       15,
-      18
+      18,
+      21,
+      22,
+      23,
+      26,
+      28,
+      30
     ],
     "yellow": [
       8,
@@ -52,10 +72,18 @@
       11,
       17,
       19,
-      20
+      20,
+      24,
+      25,
+      27,
+      29,
+      31
     ],
     "orange": [
       16
+    ],
+    "none": [
+      32
     ]
   },
   "per_card": {
@@ -297,6 +325,150 @@
       "back": {
         "width": 1177,
         "height": 813
+      }
+    },
+    "21": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "22": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "23": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "24": {
+      "border": "orange",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "25": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "26": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "27": {
+      "border": "red",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "28": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "29": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "30": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "31": {
+      "border": "orange",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "32": {
+      "border": "purple",
+      "timer": "none",
+      "front": {
+        "width": 1177,
+        "height": 815
+      },
+      "back": {
+        "width": 1177,
+        "height": 815
       }
     }
   }
