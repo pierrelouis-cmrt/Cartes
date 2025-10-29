@@ -55,33 +55,41 @@
               <!-- options générées dynamiquement -->
             </select>
           </h1>
-          <button
-            id="infoBtn"
-            class="info-btn"
-            title="Afficher les raccourcis clavier"
-            aria-label="Informations"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="lucide lucide-info-icon lucide-info"
+          <div class="info-wrapper">
+            <button
+              id="infoBtn"
+              class="info-btn"
+              title="Afficher les raccourcis clavier"
+              aria-label="Informations"
             >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4" />
-              <path d="M12 8h.01" />
-            </svg>
-          </button>
-          <p class="help-text hidden" id="helpText">
-            ← / → pour naviguer • Espace pour retourner • R pour aléatoire • F
-            pour favoris • B pour favori
-          </p>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="lucide lucide-info-icon lucide-info"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
+              </svg>
+            </button>
+            <div class="help-tooltip hidden" id="helpTooltip">
+              <span class="tooltip-arrow"></span>
+              <div class="tooltip-content">
+                <div class="shortcut"><kbd>←</kbd><kbd>→</kbd> Naviguer</div>
+                <div class="shortcut"><kbd>Espace</kbd> Retourner</div>
+                <div class="shortcut"><kbd>R</kbd> Aléatoire</div>
+                <div class="shortcut"><kbd>F</kbd> Favoris</div>
+                <div class="shortcut"><kbd>B</kbd> Marquer favori</div>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -283,31 +291,16 @@
 
     <footer class="footer-section">
       <div class="footer-content">
-        <div class="footer-inner">
-          <p class="footer-text">
-            Flashcards par B. Bernard, sous licence comme indiqué dans le
-            <a
-              href="https://github.com/pierrelouis-cmrt/Cartes#readme"
-              target="_blank"
-              rel="noopener noreferrer"
-              >README</a
-            >, et disponibles sur
-            <a
-              href="https://gitlab.com/capecl/y2"
-              target="_blank"
-              rel="noopener noreferrer"
-              >GitLab</a
-            >.
-          </p>
+        <div class="footer-row">
           <a
             href="https://capecl.fr"
-            class="btn-home"
+            class="footer-home"
             aria-label="Retour à l'accueil CAPECL"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -320,8 +313,26 @@
                 d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
               />
             </svg>
-            <span>Accueil</span>
+            Accueil
           </a>
+          <div class="footer-credits">
+            <span
+              >Flashcards par B. Bernard, sous licence comme indiqué dans
+              le</span
+            >
+            <a
+              href="https://github.com/pierrelouis-cmrt/Cartes#readme"
+              target="_blank"
+              rel="noopener noreferrer"
+              >README</a
+            >, et disponibles sur
+            <a
+              href="https://gitlab.com/capecl/y2"
+              target="_blank"
+              rel="noopener noreferrer"
+              >GitLab</a
+            >.
+          </div>
         </div>
       </div>
     </footer>
