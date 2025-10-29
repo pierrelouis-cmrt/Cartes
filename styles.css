@@ -85,6 +85,65 @@
 
     color-scheme: dark;
   }
+
+  .btn,
+  .random-toggle,
+  .favourites-toggle,
+  .btn-bookmark {
+    --bordered-hover-bg: rgba(240, 240, 240, 0.08);
+    --bordered-hover-border: var(--color-grey-mid);
+    --bordered-hover-color: var(--color-woodsmoke);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
+
+  .btn:not(.secondary):not(.btn-bookmark),
+  .random-toggle {
+    --bordered-hover-bg: rgba(199, 48, 48, 0.16);
+    --bordered-hover-border: var(--color-accent-hover);
+    --bordered-hover-color: var(--color-accent-hover);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
+
+  .btn.secondary {
+    --bordered-hover-bg: rgba(240, 240, 240, 0.1);
+    --bordered-hover-border: var(--color-grey-mid);
+    --bordered-hover-color: var(--color-woodsmoke);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
+
+  .btn-bookmark,
+  .favourites-toggle {
+    --bordered-hover-bg: rgba(245, 158, 11, 0.22);
+    --bordered-hover-border: var(--gold-hover);
+    --bordered-hover-color: var(--gold-hover);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
+
+  .random-toggle.active {
+    --bordered-hover-bg: var(--color-grey-contrast);
+    --bordered-hover-border: var(--color-grey-contrast);
+    --bordered-hover-color: var(--color-white);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
+
+  .favourites-toggle.active {
+    --bordered-hover-bg: var(--gold);
+    --bordered-hover-border: var(--gold);
+    --bordered-hover-color: var(--color-white);
+    --bordered-shadow-hover: none;
+    --bordered-shadow-active: none;
+    --bordered-shadow-focus: none;
+  }
 }
 
 ::selection {
@@ -574,32 +633,75 @@ h1 {
   touch-action: manipulation;
 }
 
-.btn:hover:not(:disabled) {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-  background-color: rgba(210, 44, 44, 0.08);
+.btn,
+.random-toggle,
+.favourites-toggle,
+.btn-bookmark {
+  --bordered-hover-bg: rgba(14, 14, 16, 0.06);
+  --bordered-hover-border: var(--color-grey-mid);
+  --bordered-hover-color: var(--color-grey-contrast);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
+  box-shadow: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  .btn:hover:not(:disabled) {
-    background-color: rgba(199, 48, 48, 0.12);
-  }
+.btn:not(.secondary):not(.btn-bookmark),
+.random-toggle {
+  --bordered-hover-bg: rgba(210, 44, 44, 0.08);
+  --bordered-hover-border: var(--color-accent);
+  --bordered-hover-color: var(--color-accent);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
+}
+
+.btn-bookmark,
+.favourites-toggle {
+  --bordered-hover-bg: rgba(251, 191, 36, 0.24);
+  --bordered-hover-border: var(--gold-hover);
+  --bordered-hover-color: var(--color-grey-contrast);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
+}
+
+.btn:hover:not(:disabled),
+.random-toggle:hover:not(.disabled),
+.favourites-toggle:hover:not(.disabled) {
+  color: var(--bordered-hover-color);
+  border-color: var(--bordered-hover-border);
+  background: var(--bordered-hover-bg);
+  box-shadow: none;
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(0);
+  box-shadow: none;
+}
+
+.random-toggle:active:not(.disabled),
+.favourites-toggle:active:not(.disabled) {
+  box-shadow: none;
 }
 
 .btn.secondary {
   background: transparent;
   color: var(--color-grey-contrast);
   border: 1px solid var(--color-grey-border);
+  --bordered-hover-bg: rgba(14, 14, 16, 0.06);
+  --bordered-hover-border: var(--color-grey-mid);
+  --bordered-hover-color: var(--color-woodsmoke);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
 }
 
-.btn.secondary:hover:not(:disabled) {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-  background: rgba(210, 44, 44, 0.08);
+.btn:focus-visible:not(:disabled),
+.random-toggle:focus-visible:not(.disabled),
+.favourites-toggle:focus-visible:not(.disabled) {
+  outline: 2px solid var(--bordered-hover-border);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .btn:disabled {
@@ -630,14 +732,6 @@ h1 {
   background: transparent;
   color: var(--gold-hover);
   border-color: var(--gold-hover);
-}
-
-.btn-bookmark:hover:not(:disabled) {
-  background: transparent;
-  border-color: var(--gold-hover);
-  color: var(--gold-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .btn-bookmark svg {
@@ -798,34 +892,18 @@ h1 {
   font-size: var(--font-size-link);
 }
 
-.random-toggle:hover {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-  background: rgba(210, 44, 44, 0.08);
-}
-
-.favourites-toggle:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(251, 191, 36, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  .random-toggle:hover {
-    background: rgba(199, 48, 48, 0.12);
-  }
-
-  .favourites-toggle:hover {
-    background: rgba(245, 158, 11, 0.15);
-  }
-}
-
 .random-toggle.disabled {
   cursor: not-allowed;
   opacity: 0.6;
   color: var(--color-grey-muted);
   background: var(--color-card-bg);
   border-color: var(--color-grey-border);
+  --bordered-hover-bg: var(--color-card-bg);
+  --bordered-hover-border: var(--color-grey-border);
+  --bordered-hover-color: var(--color-grey-muted);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
 }
 
 .random-toggle.disabled:hover {
@@ -833,17 +911,28 @@ h1 {
   background: var(--color-card-bg);
 }
 
-.random-toggle.active,
-.favourites-toggle.active {
+.random-toggle.active {
   background: var(--color-grey-contrast);
   color: var(--color-white);
   border-color: var(--color-grey-contrast);
+  --bordered-hover-bg: var(--color-grey-contrast);
+  --bordered-hover-border: var(--color-grey-contrast);
+  --bordered-hover-color: var(--color-white);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
 }
 
 .favourites-toggle.active {
   background: var(--gold);
   color: var(--color-white);
   border-color: var(--gold);
+  --bordered-hover-bg: var(--gold);
+  --bordered-hover-border: var(--gold);
+  --bordered-hover-color: var(--color-white);
+  --bordered-shadow-hover: none;
+  --bordered-shadow-active: none;
+  --bordered-shadow-focus: none;
 }
 
 .random-icon,
