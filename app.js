@@ -38,54 +38,124 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (infoBtn && helpTooltip) {
     let tooltipVisible = false;
+    let repositionFrame = null;
 
-    infoBtn.addEventListener("click", function (e) {
+    const resetTooltipStyles = () => {
+      helpTooltip.style.position = "";
+      helpTooltip.style.top = "";
+      helpTooltip.style.left = "";
+      helpTooltip.style.right = "";
+      helpTooltip.style.bottom = "";
+      helpTooltip.style.removeProperty("--tooltip-offset-x");
+      helpTooltip.dataset.placement = "bottom";
+    };
+
+    const closeTooltip = () => {
+      if (!tooltipVisible) return;
+      tooltipVisible = false;
+      helpTooltip.classList.add("hidden");
+      helpTooltip.setAttribute("aria-hidden", "true");
+      if (repositionFrame !== null) {
+        cancelAnimationFrame(repositionFrame);
+        repositionFrame = null;
+      }
+      resetTooltipStyles();
+    };
+
+    const positionTooltip = () => {
+      if (!tooltipVisible) return;
+
+      const spacing = 12;
+      const buttonRect = infoBtn.getBoundingClientRect();
+
+      helpTooltip.style.position = "fixed";
+      helpTooltip.style.right = "auto";
+      helpTooltip.style.bottom = "auto";
+      helpTooltip.dataset.placement = "bottom";
+
+      const anchorX = buttonRect.left + buttonRect.width / 2;
+      helpTooltip.style.left = `${anchorX}px`;
+      helpTooltip.style.setProperty("--tooltip-offset-x", "0px");
+
+      const tooltipRect = helpTooltip.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const halfWidth = tooltipRect.width / 2;
+
+      const leftBoundary = anchorX - halfWidth;
+      const rightBoundary = anchorX + halfWidth;
+      const overflowLeft = Math.max(spacing - leftBoundary, 0);
+      const overflowRight = Math.max(rightBoundary - (viewportWidth - spacing), 0);
+      const offsetX = overflowLeft - overflowRight;
+      helpTooltip.style.setProperty("--tooltip-offset-x", `${offsetX}px`);
+
+      let top = buttonRect.bottom + spacing;
+      let placement = "bottom";
+
+      if (top + tooltipRect.height > viewportHeight - spacing) {
+        const aboveTop = buttonRect.top - spacing - tooltipRect.height;
+        if (aboveTop >= spacing) {
+          top = aboveTop;
+          placement = "top";
+        } else {
+          top = Math.max(spacing, viewportHeight - tooltipRect.height - spacing);
+        }
+      }
+
+      const minTop = spacing;
+      const maxTop = Math.max(spacing, viewportHeight - tooltipRect.height - spacing);
+      top = Math.min(Math.max(top, minTop), maxTop);
+
+      helpTooltip.style.top = `${top}px`;
+      helpTooltip.dataset.placement = placement;
+    };
+
+    const scheduleTooltipReposition = () => {
+      if (!tooltipVisible) return;
+      if (repositionFrame !== null) return;
+      repositionFrame = requestAnimationFrame(() => {
+        repositionFrame = null;
+        positionTooltip();
+      });
+    };
+
+    const openTooltip = () => {
+      if (tooltipVisible) return;
+      tooltipVisible = true;
+      helpTooltip.classList.remove("hidden");
+      helpTooltip.setAttribute("aria-hidden", "false");
+      scheduleTooltipReposition();
+    };
+
+    infoBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      tooltipVisible = !tooltipVisible;
-
       if (tooltipVisible) {
-        helpTooltip.classList.remove("hidden");
-        // Focus trap for accessibility
-        helpTooltip.setAttribute("aria-hidden", "false");
+        closeTooltip();
       } else {
-        helpTooltip.classList.add("hidden");
-        helpTooltip.setAttribute("aria-hidden", "true");
+        openTooltip();
       }
     });
 
-    // Close tooltip when clicking outside
-    document.addEventListener("click", function (e) {
+    document.addEventListener("click", (e) => {
       if (!infoBtn.contains(e.target) && !helpTooltip.contains(e.target)) {
-        if (tooltipVisible) {
-          helpTooltip.classList.add("hidden");
-          helpTooltip.setAttribute("aria-hidden", "true");
-          tooltipVisible = false;
-        }
+        closeTooltip();
       }
     });
 
-    // Close on escape key
-    document.addEventListener("keydown", function (e) {
+    document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && tooltipVisible) {
-        helpTooltip.classList.add("hidden");
-        helpTooltip.setAttribute("aria-hidden", "true");
-        tooltipVisible = false;
-        infoBtn.focus(); // Return focus to the button
+        closeTooltip();
+        infoBtn.focus();
       }
     });
 
-    // Prevent tooltip from staying open on window resize
-    let resizeTimer;
-    window.addEventListener("resize", function () {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function () {
-        if (tooltipVisible) {
-          helpTooltip.classList.add("hidden");
-          helpTooltip.setAttribute("aria-hidden", "true");
-          tooltipVisible = false;
-        }
-      }, 250);
-    });
+    const handleViewportChange = () => {
+      if (!tooltipVisible) return;
+      scheduleTooltipReposition();
+    };
+
+    window.addEventListener("resize", handleViewportChange, { passive: true });
+    window.addEventListener("scroll", handleViewportChange, { passive: true });
   }
 });
 

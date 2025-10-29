@@ -266,8 +266,8 @@ h1 {
 .help-tooltip {
   position: absolute;
   top: calc(100% + 8px);
-  right: 50%;
-  transform: translateX(50%);
+  left: 50%;
+  transform: translateX(calc(-50% + var(--tooltip-offset-x, 0px)));
   background: var(--color-white);
   border: 1px solid var(--color-grey-border);
   border-radius: var(--radius);
@@ -275,7 +275,9 @@ h1 {
   box-shadow: var(--shadow-tooltip);
   z-index: 1000;
   min-width: 180px;
+  max-width: min(260px, calc(100vw - 24px));
   animation: fadeInScale 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, top, left;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -287,30 +289,18 @@ h1 {
 @keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: translateX(50%) scale(0.95) translateY(-4px);
+    transform: translateX(calc(-50% + var(--tooltip-offset-x, 0px)))
+      translateY(-4px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateX(50%) scale(1) translateY(0);
+    transform: translateX(calc(-50% + var(--tooltip-offset-x, 0px)))
+      translateY(0) scale(1);
   }
 }
 
 .tooltip-arrow {
-  position: absolute;
-  top: -6px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
-  background: var(--color-white);
-  border-top: 1px solid var(--color-grey-border);
-  border-left: 1px solid var(--color-grey-border);
-}
-
-@media (prefers-color-scheme: dark) {
-  .tooltip-arrow {
-    background: var(--color-card-bg);
-  }
+  display: none;
 }
 
 .tooltip-content {
