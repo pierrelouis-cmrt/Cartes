@@ -70,7 +70,7 @@
     --color-grey-faint: rgba(240, 240, 240, 0.44);
     --color-card-bg: #1a1a1a;
     --color-divider: rgba(255, 255, 255, 0.15);
-    --color-accent: #c73030;
+    --color-accent: #cf4949;
     --color-accent-muted: #8b4545;
     --color-accent-hover: #9b5050;
 
@@ -619,22 +619,23 @@ h1 {
 
 /* Bookmark button styles - no red hover */
 .btn-bookmark {
-  background: var(--gold);
-  color: var(--color-white);
+  background: transparent;
+  color: var(--gold);
   border-color: var(--gold);
   padding: 8px 20px;
   position: relative;
 }
 
 .btn-bookmark.active {
-  background: var(--gold-hover);
+  background: transparent;
+  color: var(--gold-hover);
   border-color: var(--gold-hover);
 }
 
 .btn-bookmark:hover:not(:disabled) {
-  background: var(--gold-hover);
+  background: transparent;
   border-color: var(--gold-hover);
-  color: var(--color-white);
+  color: var(--gold-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
@@ -960,7 +961,7 @@ h1 {
 
 .footer-home:hover {
   color: var(--color-woodsmoke);
-  transform: translateX(-2px);
+  text-decoration: underline;
 }
 
 .footer-home svg {
