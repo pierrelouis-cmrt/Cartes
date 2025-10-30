@@ -1021,7 +1021,7 @@ h1 {
 }
 
 .footer-credits a:hover {
-  color: var(--gold);
+  text-decoration: underline;
 }
 
 /* Simple text home link on the left */
