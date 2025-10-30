@@ -749,7 +749,6 @@ h1 {
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   align-items: center;
   padding: 6px 10px;
   border-radius: 12px;
