@@ -537,6 +537,16 @@
         </div>
       </div>
     </footer>
-    <script src="app.js"></script>
+    <script>
+      (function enforceFreshAppScript() {
+        var src = "app.js";
+        var version = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+        var script = document.createElement("script");
+        script.src = src + (src.indexOf("?") === -1 ? "?" : "&") + "v=" + version;
+        script.async = false;
+        script.crossOrigin = "anonymous";
+        document.body.appendChild(script);
+      })();
+    </script>
   </body>
 </html>
