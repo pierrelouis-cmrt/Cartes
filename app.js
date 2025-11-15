@@ -20,6 +20,8 @@ const MAX_PROBE = 100;
 const PRELOAD_RADIUS = 2;
 const MAX_HISTORY = 5; // Maximum history for shuffle mode
 const WELCOME_MODAL_VERSION = "1.0"; // Change this to show welcome modal again
+const FAST_NAV_THRESHOLD = 2; // Number of quick clicks before skipping animations
+const FAST_NAV_WINDOW_MS = 450; // Time window to consider clicks as part of the same burst
 
 /* ===== Helpers ===== */
 const qs = (s, el = document) => el.querySelector(s);
@@ -854,6 +856,7 @@ function toggleRevisionMode() {
   const previousCard = getCurrentCard();
   state.revisionMode = !state.revisionMode;
   localStorage.setItem("fc_revision_mode", JSON.stringify(state.revisionMode));
+  resetFastNavState();
 
   if (state.revisionMode) {
     // Entering révision mode
@@ -942,6 +945,10 @@ const state = {
   filterDifficulty: "all",
   formats: null,
   shuffleQueue: [],
+  navBurstCount: 0,
+  navLastTime: 0,
+  navFastMode: false,
+  navQueue: [],
   // Révision mode state
   revisionMode: JSON.parse(localStorage.getItem("fc_revision_mode") || "false"),
   revisionIncorrect: new Set(), // Cards marked "Pas OK" in current round
@@ -951,6 +958,64 @@ const state = {
 };
 
 const LAST_CARD_KEY_PREFIX = "fc_last_card_";
+
+function nowMs() {
+  if (typeof performance !== "undefined" && performance.now) {
+    return performance.now();
+  }
+  return Date.now();
+}
+
+function resetFastNavState() {
+  state.navBurstCount = 0;
+  state.navLastTime = 0;
+  state.navFastMode = false;
+  state.navQueue = [];
+}
+
+function recordFastNavBurst() {
+  if (state.revisionMode) {
+    resetFastNavState();
+    return false;
+  }
+
+  const now = nowMs();
+  if (now - state.navLastTime <= FAST_NAV_WINDOW_MS) {
+    state.navBurstCount += 1;
+  } else {
+    state.navBurstCount = 1;
+  }
+  state.navLastTime = now;
+  state.navFastMode = state.navBurstCount > FAST_NAV_THRESHOLD;
+  return state.navFastMode;
+}
+
+function enqueueNavAction(type) {
+  if (state.revisionMode) return;
+  if (!Array.isArray(state.navQueue)) {
+    state.navQueue = [];
+  }
+  state.navQueue.push(type);
+}
+
+function processNavQueue() {
+  if (state.revisionMode) {
+    state.navQueue = [];
+    return;
+  }
+  if (!Array.isArray(state.navQueue) || state.navQueue.length === 0) {
+    return;
+  }
+  if (state.isTransitioning) {
+    return;
+  }
+  const action = state.navQueue.shift();
+  if (action === "next") {
+    nextCard({ queued: true });
+  } else if (action === "prev") {
+    prevCard({ queued: true });
+  }
+}
 
 function shuffleArray(items) {
   const arr = items.slice();
@@ -1103,6 +1168,7 @@ async function loadChapter(n) {
   state.imagesLoaded.clear();
   state.preloading.clear();
   state.formats = formatCacheByBase.get(state.basePath) || null;
+  resetFastNavState();
 
   // Reset révision progress when changing chapter
   if (state.revisionMode) {
@@ -1492,7 +1558,7 @@ function waitAnimationEnd(el, name, fallback = 600) {
   });
 }
 
-async function showCurrent(direction = "none") {
+async function showCurrent(direction = "none", options = {}) {
   if (state.isTransitioning) return;
 
   const n = getCurrentCard();
@@ -1514,6 +1580,16 @@ async function showCurrent(direction = "none") {
   }
 
   state.isTransitioning = true;
+
+  const finishTransition = () => {
+    state.isTransitioning = false;
+    updateNavButtons();
+    if (n) {
+      storeCurrentCard(n);
+    }
+    preloadNearbyCards();
+    processNavQueue();
+  };
 
   const swapImages = async () => {
     if (state.flipped) {
@@ -1582,12 +1658,7 @@ async function showCurrent(direction = "none") {
 
   if (direction === "none") {
     await swapImages();
-    updateNavButtons();
-    state.isTransitioning = false;
-    if (n) {
-      storeCurrentCard(n);
-    }
-    preloadNearbyCards();
+    finishTransition();
     return;
   }
 
@@ -1596,8 +1667,16 @@ async function showCurrent(direction = "none") {
   const inClass = direction === "next" ? "in-right" : "in-left";
   const inName = direction === "next" ? "inRight" : "inLeft";
 
+  const useInstant = Boolean(options && options.instant);
+
   cardShell.classList.remove("out-left", "out-right", "in-left", "in-right");
   void cardShell.offsetWidth;
+
+  if (useInstant) {
+    await swapImages();
+    finishTransition();
+    return;
+  }
 
   cardShell.classList.add(outClass);
   await waitAnimationEnd(cardShell, outName, 400);
@@ -1610,14 +1689,7 @@ async function showCurrent(direction = "none") {
   await waitAnimationEnd(cardShell, inName, 500);
   cardShell.classList.remove(inClass);
 
-  state.isTransitioning = false;
-  updateNavButtons();
-
-  if (n) {
-    storeCurrentCard(n);
-  }
-
-  preloadNearbyCards();
+  finishTransition();
 }
 
 function queuePreload(cardNo) {
@@ -1687,9 +1759,23 @@ function preloadNearbyCards() {
   }
 }
 
-function nextCard() {
-  if (state.isTransitioning) return;
+function nextCard(options = {}) {
+  const { queued = false } = options;
   if (!state.deck.length) return;
+
+  if (!queued && !state.revisionMode) {
+    recordFastNavBurst();
+  }
+
+  if (state.isTransitioning) {
+    if (!state.revisionMode && !queued) {
+      enqueueNavAction("next");
+    }
+    return;
+  }
+
+  const instantNav = !state.revisionMode && state.navFastMode;
+  const showOptions = instantNav ? { instant: true } : undefined;
 
   if (state.shuffle) {
     // Shuffle mode: use history
@@ -1699,7 +1785,7 @@ function nextCard() {
       // We have forward history, go to next in history
       state.historyIndex++;
       saveHistory();
-      showCurrent("next");
+      showCurrent("next", showOptions);
       return;
     }
 
@@ -1731,30 +1817,45 @@ function nextCard() {
       ensureShuffleQueue(nextCardNo);
 
       saveHistory();
-      showCurrent("next");
+      showCurrent("next", showOptions);
     }
   } else {
     // Sequential mode: just go to next in deck
     state.currentIndex = (state.currentIndex + 1) % state.deck.length;
-    showCurrent("next");
+    showCurrent("next", showOptions);
   }
 }
 
-function prevCard() {
-  if (state.isTransitioning) return;
+function prevCard(options = {}) {
+  const { queued = false } = options;
   if (!state.deck.length) return;
+
+  const canNavigate = state.shuffle ? state.historyIndex > 0 : true;
+  if (!canNavigate) return;
+
+  if (!queued && !state.revisionMode) {
+    recordFastNavBurst();
+  }
+
+  if (state.isTransitioning) {
+    if (!state.revisionMode && !queued) {
+      enqueueNavAction("prev");
+    }
+    return;
+  }
+
+  const instantNav = !state.revisionMode && state.navFastMode;
+  const showOptions = instantNav ? { instant: true } : undefined;
 
   if (state.shuffle) {
     // Shuffle mode: go back in history
-    if (state.historyIndex > 0) {
-      state.historyIndex--;
-      showCurrent("prev");
-    }
+    state.historyIndex--;
+    showCurrent("prev", showOptions);
   } else {
     // Sequential mode: always enabled, go to previous in deck
     state.currentIndex =
       (state.currentIndex - 1 + state.deck.length) % state.deck.length;
-    showCurrent("prev");
+    showCurrent("prev", showOptions);
   }
 }
 
