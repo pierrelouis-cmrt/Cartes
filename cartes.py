@@ -27,6 +27,7 @@ import os
 import sys
 import json
 import colorsys
+from datetime import datetime, timezone
 from typing import Tuple, Optional, Dict, Any, List
 
 import numpy as np
@@ -723,6 +724,7 @@ def process_pdf(in_path: str, args: argparse.Namespace) -> None:
 
     manifest: Dict[str, Any] = {
         "chapter": base_name,
+        "asset_version": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "image_format": ext,
         "total_cards": total_fronts,
         "cards_by_border": {k: sorted(v) for k, v in cards_by_border.items() if v},

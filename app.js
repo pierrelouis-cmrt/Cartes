@@ -19,6 +19,7 @@ const MAX_CHAPTERS_PROBE = 20;
 const MAX_PROBE = 100;
 const PRELOAD_RADIUS = 2;
 const MAX_HISTORY = 5; // Maximum history for shuffle mode
+const WELCOME_MODAL_VERSION = "1.0"; // Change this to show welcome modal again
 
 /* ===== Helpers ===== */
 const qs = (s, el = document) => el.querySelector(s);
@@ -165,6 +166,7 @@ const loadingImages = new Map();
 const manifestCache = new Map();
 const manifestFetches = new Map();
 const formatCacheByBase = new Map();
+const assetVersionByBase = new Map();
 
 function loadImage(url, useCache = true) {
   if (useCache && imageCache.has(url)) {
@@ -212,8 +214,63 @@ function imageFormatCacheKey(basePath, prefix, n) {
   return `${basePath}|${prefix}|${n}`;
 }
 
+function appendQueryParam(url, key, value) {
+  if (value == null || value === "") return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+}
+
+function deriveAssetVersion(manifest) {
+  if (!manifest || typeof manifest !== "object") return null;
+  const candidates = [
+    manifest.asset_version,
+    manifest.assetVersion,
+    manifest.cache_bust,
+    manifest.cacheBust,
+    manifest.version,
+    manifest.generated_at,
+    manifest.generatedAt,
+    manifest.updated_at,
+    manifest.updatedAt,
+  ];
+  for (const candidate of candidates) {
+    if (candidate == null) continue;
+    const str = String(candidate).trim();
+    if (str) return str;
+  }
+  return null;
+}
+
+function registerAssetVersion(basePath, manifest) {
+  if (!basePath) return null;
+  const version = deriveAssetVersion(manifest);
+  if (version) {
+    assetVersionByBase.set(basePath, version);
+  } else {
+    assetVersionByBase.delete(basePath);
+  }
+  return version;
+}
+
+function getAssetVersion(basePath = state.basePath) {
+  if (!basePath) return null;
+  if (basePath === state.basePath && state.assetVersion) {
+    return state.assetVersion;
+  }
+  return assetVersionByBase.get(basePath) || null;
+}
+
+function addCacheBustParam(url, token = Date.now().toString(36)) {
+  return appendQueryParam(url, "cb", token);
+}
+
 function buildImageURL(basePath, prefix, n, ext) {
-  return `${basePath}/${prefix}${n}.${ext}`;
+  let url = `${basePath}/${prefix}${n}.${ext}`;
+  const assetVersion = getAssetVersion(basePath);
+  if (assetVersion) {
+    url = appendQueryParam(url, "v", assetVersion);
+  }
+  return url;
 }
 
 function normalizeExt(ext) {
@@ -282,7 +339,9 @@ function asPositiveInt(value) {
 async function fetchManifest(basePath, { forceReload = false } = {}) {
   if (!basePath) return null;
   if (!forceReload && manifestCache.has(basePath)) {
-    return manifestCache.get(basePath);
+    const cached = manifestCache.get(basePath);
+    registerAssetVersion(basePath, cached);
+    return cached;
   }
   if (manifestFetches.has(basePath)) {
     return manifestFetches.get(basePath);
@@ -298,6 +357,7 @@ async function fetchManifest(basePath, { forceReload = false } = {}) {
       if (data) {
         manifestCache.set(basePath, data);
         cacheFormatsForBase(basePath, data);
+        registerAssetVersion(basePath, data);
       }
       return data;
     });
@@ -383,13 +443,25 @@ async function loadCardImage(prefix, n, options = {}) {
   for (const ext of candidates) {
     const url = buildImageURL(basePath, prefix, n, ext);
     lastTried = url;
-    const result = probe
+    let cacheBusted = false;
+    let result = probe
       ? await probeImage(url)
       : await loadImage(url, useCache);
+    if (!probe && !result.ok) {
+      const bustedUrl = addCacheBustParam(url);
+      lastTried = bustedUrl;
+      result = await loadImage(bustedUrl, false);
+      cacheBusted = true;
+    }
     if (result.ok) {
-      imageFormatCache.set(key, ext);
-      result.src = url;
       result.ext = ext;
+      imageFormatCache.set(key, ext);
+      if (!result.src) {
+        result.src = lastTried || url;
+      }
+      if (cacheBusted && useCache && !imageCache.has(url)) {
+        imageCache.set(url, { ...result });
+      }
       return result;
     }
   }
@@ -501,6 +573,353 @@ function clearHistory() {
   localStorage.removeItem(key);
 }
 
+// Révision mode management
+function getRevisionKey() {
+  return `fc_revision_ch${state.chapter}`;
+}
+
+function saveRevisionProgress() {
+  if (!state.chapter || !state.revisionMode) return;
+  const key = getRevisionKey();
+  const data = {
+    round: state.revisionRound,
+    incorrect: Array.from(state.revisionIncorrect),
+    seen: Array.from(state.revisionSeen),
+    mastered: Array.from(state.revisionMastered),
+  };
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function loadRevisionProgress() {
+  if (!state.chapter) return null;
+  const key = getRevisionKey();
+  const stored = localStorage.getItem(key);
+  if (!stored) return null;
+  try {
+    const data = JSON.parse(stored);
+    return {
+      round: data.round || 1,
+      incorrect: new Set(data.incorrect || []),
+      seen: new Set(data.seen || []),
+      mastered: new Set(data.mastered || []),
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+function resetRevisionProgress() {
+  state.revisionRound = 1;
+  state.revisionIncorrect = new Set();
+  state.revisionSeen = new Set();
+  state.revisionMastered = new Set();
+  if (state.chapter) {
+    const key = getRevisionKey();
+    localStorage.removeItem(key);
+  }
+}
+
+function restartRevisionSession() {
+  if (!state.revisionMode) return;
+
+  resetRevisionProgress();
+  rebuildDeck();
+
+  if (!state.deck.length) {
+    updateCounter();
+    return;
+  }
+
+  if (!state.shuffle) {
+    state.shuffle = true;
+    localStorage.setItem("fc_shuffle", "true");
+  }
+
+  resetShuffleForRevision();
+  showCurrent();
+  updateRevisionUI();
+  updateCounter();
+}
+
+function markCardOK() {
+  const currentCard = getCurrentCard();
+  if (!currentCard) return;
+
+  // Remove from incorrect set if present
+  state.revisionIncorrect.delete(currentCard);
+  // Add to mastered set
+  state.revisionMastered.add(currentCard);
+  // Mark as seen in this round
+  state.revisionSeen.add(currentCard);
+
+  saveRevisionProgress();
+
+  // Check if we've completed the round
+  if (checkRoundComplete()) {
+    swipeCard("right", () => handleRoundComplete());
+  } else {
+    // Move to next card with swipe animation
+    swipeCard("right", () => nextRevisionCard());
+  }
+}
+
+function markCardPasOK() {
+  const currentCard = getCurrentCard();
+  if (!currentCard) return;
+
+  // Add to incorrect set
+  state.revisionIncorrect.add(currentCard);
+  // Mark as seen in this round
+  state.revisionSeen.add(currentCard);
+  // Remove from mastered if it was there
+  state.revisionMastered.delete(currentCard);
+
+  saveRevisionProgress();
+
+  // Check if we've completed the round
+  if (checkRoundComplete()) {
+    swipeCard("left", () => handleRoundComplete());
+  } else {
+    // Move to next card with swipe animation
+    swipeCard("left", () => nextRevisionCard());
+  }
+}
+
+function checkRoundComplete() {
+  // In révision mode, a round is complete when we've seen all cards in the current deck
+  const currentDeck = getCurrentRevisionDeck();
+  return state.revisionSeen.size >= currentDeck.length;
+}
+
+function getCurrentRevisionDeck() {
+  // In révision mode, the deck itself is already filtered to the correct cards
+  return state.deck.slice();
+}
+
+function nextRevisionCard() {
+  // Navigate to the next unseen card in révision mode
+  if (!state.deck.length) return;
+
+  // Find next unseen card
+  const unseenCards = state.deck.filter(card => !state.revisionSeen.has(card));
+
+  if (unseenCards.length === 0) {
+    // All cards seen - round should be complete
+    handleRoundComplete();
+    return;
+  }
+
+  // Pick a random unseen card
+  const randomIndex = Math.floor(Math.random() * unseenCards.length);
+  const nextCardNo = unseenCards[randomIndex];
+
+  // Update history for shuffle mode compatibility
+  state.history.push(nextCardNo);
+  if (state.history.length > MAX_HISTORY) {
+    state.history.shift();
+    state.historyIndex = MAX_HISTORY - 1;
+  } else {
+    state.historyIndex++;
+  }
+
+  // Update unvisited set
+  state.unvisited.delete(nextCardNo);
+
+  // Save history
+  saveHistory();
+
+  // Show the new card with scale-in animation
+  showCurrentWithScaleIn();
+  updateCounter();
+}
+
+function swipeCard(direction, callback) {
+  // Swipe the current card away (Tinder-style)
+  const cardShell = qs("#cardShell");
+  if (!cardShell) return;
+
+  // Prevent interaction during animation
+  state.isTransitioning = true;
+
+  // Add swipe animation class
+  const animationClass = direction === "right" ? "swiping-right" : "swiping-left";
+  cardShell.classList.add(animationClass);
+
+  // Wait for animation to complete
+  setTimeout(() => {
+    cardShell.classList.remove(animationClass);
+    state.isTransitioning = false;
+
+    // Call the callback to load next card or handle completion
+    if (callback) callback();
+  }, 300);
+}
+
+function showCurrentWithScaleIn() {
+  // Show current card with scale-in animation
+  const cardShell = qs("#cardShell");
+  if (!cardShell) {
+    // Fallback to regular showCurrent
+    showCurrent();
+    return;
+  }
+
+  // Add scaling-in class
+  cardShell.classList.add("scaling-in");
+
+  // Show the card
+  showCurrent();
+
+  // Remove class after animation
+  setTimeout(() => {
+    cardShell.classList.remove("scaling-in");
+  }, 300);
+}
+
+function handleRoundComplete() {
+  // Check if all cards are mastered
+  if (state.revisionIncorrect.size === 0) {
+    // All cards mastered! Show congratulations
+    showRevisionComplete();
+  } else {
+    // Start a new round with incorrect cards
+    startNewRevisionRound();
+  }
+}
+
+function startNewRevisionRound() {
+  state.revisionRound++;
+  state.revisionSeen = new Set();
+
+  // Rebuild deck to only include incorrect cards
+  if (state.revisionIncorrect.size > 0) {
+    state.deck = Array.from(state.revisionIncorrect);
+  }
+
+  saveRevisionProgress();
+  // Reset shuffle state for new round
+  resetShuffleForRevision();
+
+  // Show first card of new round
+  showCurrent();
+  updateRevisionUI();
+  updateCounter();
+}
+
+function showRevisionComplete() {
+  // Show congratulations modal
+  const modal = qs("#revisionCompleteModal");
+  if (modal) {
+    const roundsEl = qs("#revisionRounds");
+    const pluralEl = qs("#revisionRoundsPlural");
+    const pluralCompleteEl = qs("#revisionRoundsPlural2");
+    if (roundsEl) roundsEl.textContent = state.revisionRound.toString();
+    if (pluralEl) {
+      pluralEl.textContent = state.revisionRound > 1 ? "s" : "";
+    }
+    if (pluralCompleteEl) {
+      pluralCompleteEl.textContent = state.revisionRound > 1 ? "s" : "";
+    }
+    modal.classList.add("show");
+  }
+}
+
+function resetShuffleForRevision(preferredCard = null) {
+  // Reset shuffle state to start fresh with current deck
+  const currentDeck = getCurrentRevisionDeck();
+  state.unvisited = new Set(currentDeck);
+  state.history = [];
+  state.historyIndex = -1;
+
+  if (!currentDeck.length) {
+    state.shuffleQueue = [];
+    return;
+  }
+
+  let firstCard = preferredCard;
+  if (firstCard == null || !state.unvisited.has(firstCard)) {
+    const randomIdx = Math.floor(Math.random() * currentDeck.length);
+    firstCard = currentDeck[randomIdx];
+  }
+
+  state.history = [firstCard];
+  state.historyIndex = 0;
+  state.unvisited.delete(firstCard);
+
+  state.shuffleQueue = shuffleArray(Array.from(state.unvisited));
+  saveHistory();
+}
+
+function toggleRevisionMode() {
+  const previousCard = getCurrentCard();
+  state.revisionMode = !state.revisionMode;
+  localStorage.setItem("fc_revision_mode", JSON.stringify(state.revisionMode));
+
+  if (state.revisionMode) {
+    // Entering révision mode
+    // Load any existing progress or reset
+    const progress = loadRevisionProgress();
+    if (progress) {
+      state.revisionRound = progress.round;
+      state.revisionIncorrect = progress.incorrect;
+      state.revisionSeen = progress.seen;
+      state.revisionMastered = progress.mastered;
+
+      // If we're in round 2+, rebuild deck with only incorrect cards
+      if (state.revisionRound > 1 && state.revisionIncorrect.size > 0) {
+        state.deck = Array.from(state.revisionIncorrect);
+      }
+    } else {
+      resetRevisionProgress();
+    }
+
+    // Enable shuffle mode and lock it
+    if (!state.shuffle) {
+      state.shuffle = true;
+      localStorage.setItem("fc_shuffle", "true");
+    }
+    resetShuffleForRevision(previousCard);
+
+    // Disable favourites-only mode
+    if (state.showFavouritesOnly) {
+      state.showFavouritesOnly = false;
+    }
+  } else {
+    // Exiting révision mode - rebuild deck with all cards
+    const keep = getCurrentCard();
+    rebuildDeck(keep);
+  }
+
+  updateRevisionUI();
+  updateShuffleUI();
+  updateFavouritesUI();
+  updateCounter();
+  showCurrent();
+}
+
+// Welcome modal functions
+function checkWelcomeModal() {
+  const seenVersion = localStorage.getItem("fc_welcome_modal_version");
+  if (seenVersion !== WELCOME_MODAL_VERSION) {
+    showWelcomeModal();
+  }
+}
+
+function showWelcomeModal() {
+  const modal = qs("#welcomeModal");
+  if (modal) {
+    modal.classList.add("show");
+  }
+}
+
+function dismissWelcomeModal() {
+  const modal = qs("#welcomeModal");
+  if (modal) {
+    modal.classList.remove("show");
+    localStorage.setItem("fc_welcome_modal_version", WELCOME_MODAL_VERSION);
+  }
+}
+
 const state = {
   total: 0,
   deck: [], // All available cards (filtered)
@@ -513,6 +932,7 @@ const state = {
   showFavouritesOnly: false,
   chapter: null,
   basePath: "",
+  assetVersion: null,
   sizes: {},
   isTransitioning: false,
   imagesLoaded: new Set(),
@@ -522,6 +942,12 @@ const state = {
   filterDifficulty: "all",
   formats: null,
   shuffleQueue: [],
+  // Révision mode state
+  revisionMode: JSON.parse(localStorage.getItem("fc_revision_mode") || "false"),
+  revisionIncorrect: new Set(), // Cards marked "Pas OK" in current round
+  revisionSeen: new Set(), // Cards seen in current round
+  revisionRound: 1, // Current round number
+  revisionMastered: new Set(), // Cards that have been marked "OK"
 };
 
 const LAST_CARD_KEY_PREFIX = "fc_last_card_";
@@ -636,6 +1062,7 @@ function applyChapter(n) {
   state.chapter = n;
   state.basePath = `flashcards/${CHAPTER_PREFIX}${n}${CHAPTER_SUFFIX}`;
   state.formats = formatCacheByBase.get(state.basePath) || null;
+  state.assetVersion = assetVersionByBase.get(state.basePath) || null;
   updateFavouritesCount();
 }
 
@@ -643,10 +1070,12 @@ async function loadManifest(options = {}) {
   state.manifest = null;
   if (!state.basePath) {
     state.formats = null;
+    state.assetVersion = null;
     return { manifest: null, info: { total: 0, hasSizes: false } };
   }
   const manifest = await fetchManifest(state.basePath, options);
   state.manifest = manifest;
+  state.assetVersion = registerAssetVersion(state.basePath, manifest);
   state.formats = formatCacheByBase.get(state.basePath) || state.formats;
   const info = applyManifestMetadata(manifest);
   if (info.defaultSize && info.total) {
@@ -675,6 +1104,19 @@ async function loadChapter(n) {
   state.preloading.clear();
   state.formats = formatCacheByBase.get(state.basePath) || null;
 
+  // Reset révision progress when changing chapter
+  if (state.revisionMode) {
+    const progress = loadRevisionProgress();
+    if (progress) {
+      state.revisionRound = progress.round;
+      state.revisionIncorrect = progress.incorrect;
+      state.revisionSeen = progress.seen;
+      state.revisionMastered = progress.mastered;
+    } else {
+      resetRevisionProgress();
+    }
+  }
+
   const { info } = await loadManifest();
   let total = info.total || 0;
   let hasSizes = info.hasSizes;
@@ -700,6 +1142,12 @@ async function loadChapter(n) {
 
   const storedCard = getStoredCard(state.chapter);
   rebuildDeck(storedCard);
+
+  // If in révision mode and round 2+, filter deck to only incorrect cards
+  if (state.revisionMode && state.revisionRound > 1 && state.revisionIncorrect.size > 0) {
+    state.deck = state.deck.filter(card => state.revisionIncorrect.has(card));
+  }
+
   if (!state.deck.length) {
     hideSkeleton();
     qs("#counter").textContent = "Aucune carte disponible.";
@@ -982,7 +1430,17 @@ function updateCounter() {
     return;
   }
 
-  if (state.showFavouritesOnly) {
+  if (state.revisionMode) {
+    // Show révision-specific counter
+    const currentDeck = getCurrentRevisionDeck();
+    const remaining = currentDeck.length - state.revisionSeen.size;
+    const roundText = state.revisionRound > 1 ? `Tour ${state.revisionRound} · ` : "";
+    if (remaining > 0) {
+      el.textContent = `${roundText}${remaining} carte${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}`;
+    } else {
+      el.textContent = `${roundText}Dernière carte !`;
+    }
+  } else if (state.showFavouritesOnly) {
     const position = state.deck.indexOf(currentCard);
     const displayNumber = position >= 0 ? position + 1 : currentCard || "?";
     el.textContent = `Favori ${displayNumber} sur ${state.deck.length}`;
@@ -1371,10 +1829,72 @@ function toggleFavouritesOnly() {
   showCurrent();
 }
 
+function updateRevisionUI() {
+  const modeToggle = qs("#modeToggle");
+  if (modeToggle) {
+    modeToggle.classList.toggle("active", state.revisionMode);
+    const textEl = modeToggle.querySelector(".toggle-text");
+    if (textEl) {
+      textEl.textContent = state.revisionMode ? "Lecture" : "Révision";
+    }
+  }
+
+  // Show/hide appropriate navigation buttons
+  const prevBtn = qs("#prevBtn");
+  const nextBtn = qs("#nextBtn");
+  const bookmarkBtn = qs("#bookmarkBtn");
+  const pasOkBtn = qs("#pasOkBtn");
+  const okBtn = qs("#okBtn");
+
+  if (state.revisionMode) {
+    // Hide lecture mode buttons
+    if (prevBtn) prevBtn.style.display = "none";
+    if (nextBtn) nextBtn.style.display = "none";
+    if (bookmarkBtn) bookmarkBtn.style.display = "none";
+    // Show révision buttons
+    if (pasOkBtn) pasOkBtn.style.display = "";
+    if (okBtn) okBtn.style.display = "";
+  } else {
+    // Show lecture mode buttons
+    if (prevBtn) prevBtn.style.display = "";
+    if (nextBtn) nextBtn.style.display = "";
+    if (bookmarkBtn) bookmarkBtn.style.display = "";
+    // Hide révision buttons
+    if (pasOkBtn) pasOkBtn.style.display = "none";
+    if (okBtn) okBtn.style.display = "none";
+  }
+
+  // Completely hide random and favourites toggles in révision mode
+  const randomToggle = qs("#randomToggle");
+  const favToggle = qs("#favouritesToggle");
+  const timerGroup = qs("#timerFilter")?.closest(".filter-group");
+  const diffGroup = qs("#difficultyFilter")?.closest(".filter-group");
+
+  if (state.revisionMode) {
+    // Hide all filter controls in révision mode
+    if (randomToggle) randomToggle.style.display = "none";
+    if (favToggle) favToggle.style.display = "none";
+    if (timerGroup) timerGroup.style.display = "none";
+    if (diffGroup) diffGroup.style.display = "none";
+  } else {
+    // Show all filter controls in lecture mode
+    if (randomToggle) randomToggle.style.display = "";
+    if (favToggle) favToggle.style.display = "";
+    if (timerGroup) timerGroup.style.display = "";
+    if (diffGroup) diffGroup.style.display = "";
+  }
+
+  // Show/hide restart button
+  const restartBtn = qs("#restartRevisionInlineBtn");
+  if (restartBtn) {
+    restartBtn.style.display = state.revisionMode ? "" : "none";
+  }
+}
+
 function updateShuffleUI() {
   const toggle = qs("#randomToggle");
   if (!toggle) return;
-  const disabled = state.showFavouritesOnly;
+  const disabled = state.showFavouritesOnly || state.revisionMode;
   toggle.classList.toggle("active", state.shuffle);
   toggle.classList.toggle("disabled", disabled);
   toggle.setAttribute("aria-checked", String(state.shuffle));
@@ -1385,8 +1905,12 @@ function updateShuffleUI() {
 function updateFavouritesUI() {
   const toggle = qs("#favouritesToggle");
   if (!toggle) return;
+  const disabled = state.revisionMode;
   toggle.classList.toggle("active", state.showFavouritesOnly);
+  toggle.classList.toggle("disabled", disabled);
   toggle.setAttribute("aria-checked", String(state.showFavouritesOnly));
+  toggle.setAttribute("aria-disabled", String(disabled));
+  toggle.setAttribute("tabindex", disabled ? "-1" : "0");
 }
 
 function updateNavButtons() {
@@ -1406,6 +1930,9 @@ function updateNavButtons() {
 }
 
 function cycleTimer() {
+  // Disable filter cycling in révision mode
+  if (state.revisionMode) return;
+
   const currentIndex = timerStates.indexOf(state.filterTimer);
   const nextIndex = (currentIndex + 1) % timerStates.length;
   state.filterTimer = timerStates[nextIndex];
@@ -1424,10 +1951,15 @@ function cycleTimer() {
 
 function updateTimerUI() {
   const pills = qs("#timerFilter");
-  pills.setAttribute("data-level", state.filterTimer);
+  if (pills) {
+    pills.setAttribute("data-level", state.filterTimer);
+  }
 }
 
 function cycleDifficulty() {
+  // Disable filter cycling in révision mode
+  if (state.revisionMode) return;
+
   const currentIndex = difficultyStates.indexOf(state.filterDifficulty);
   const nextIndex = (currentIndex + 1) % difficultyStates.length;
   state.filterDifficulty = difficultyStates[nextIndex];
@@ -1446,7 +1978,9 @@ function cycleDifficulty() {
 
 function updateDifficultyUI() {
   const pills = qs("#difficultyFilter");
-  pills.setAttribute("data-level", state.filterDifficulty);
+  if (pills) {
+    pills.setAttribute("data-level", state.filterDifficulty);
+  }
 }
 
 function bindUI() {
@@ -1471,6 +2005,57 @@ function bindUI() {
 
   qs("#nextBtn").addEventListener("click", nextCard);
   qs("#prevBtn").addEventListener("click", prevCard);
+
+  // Révision mode buttons
+  const pasOkBtn = qs("#pasOkBtn");
+  const okBtn = qs("#okBtn");
+  if (pasOkBtn) {
+    pasOkBtn.addEventListener("click", markCardPasOK);
+  }
+  if (okBtn) {
+    okBtn.addEventListener("click", markCardOK);
+  }
+
+  // Mode toggle
+  const modeToggle = qs("#modeToggle");
+  if (modeToggle) {
+    modeToggle.addEventListener("click", toggleRevisionMode);
+  }
+
+  // Révision complete modal buttons
+  const restartRevisionBtn = qs("#restartRevisionBtn");
+  const backToLectureBtn = qs("#backToLectureBtn");
+  if (restartRevisionBtn) {
+    restartRevisionBtn.addEventListener("click", () => {
+      restartRevisionSession();
+      const modal = qs("#revisionCompleteModal");
+      if (modal) modal.classList.remove("show");
+    });
+  }
+  if (backToLectureBtn) {
+    backToLectureBtn.addEventListener("click", () => {
+      const modal = qs("#revisionCompleteModal");
+      if (modal) modal.classList.remove("show");
+      // Switch to lecture mode
+      toggleRevisionMode();
+    });
+  }
+
+  // Welcome modal dismiss button
+  const dismissWelcomeBtn = qs("#dismissWelcomeBtn");
+  if (dismissWelcomeBtn) {
+    dismissWelcomeBtn.addEventListener("click", dismissWelcomeModal);
+  }
+
+  // Inline restart button
+  const restartRevisionInlineBtn = qs("#restartRevisionInlineBtn");
+  if (restartRevisionInlineBtn) {
+    restartRevisionInlineBtn.addEventListener("click", () => {
+      if (confirm("Recommencer la révision depuis le début ?")) {
+        restartRevisionSession();
+      }
+    });
+  }
 
   // Random toggle
   const randomToggle = qs("#randomToggle");
@@ -1544,28 +2129,42 @@ function bindUI() {
       ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(e.target.tagName)
     )
       return;
-    if (e.key === "ArrowRight") nextCard();
-    else if (e.key === "ArrowLeft") prevCard();
-    else if (e.key === " ") {
-      e.preventDefault();
-      if (!state.isTransitioning) {
-        setFlipped(!state.flipped);
+
+    // In révision mode, arrow keys trigger OK/Pas OK
+    if (state.revisionMode) {
+      if (e.key === "ArrowLeft") markCardPasOK();
+      else if (e.key === "ArrowRight") markCardOK();
+      else if (e.key === " ") {
+        e.preventDefault();
+        if (!state.isTransitioning) {
+          setFlipped(!state.flipped);
+        }
       }
-    } else if (
-      e.key.toLowerCase() === "r" &&
-      !e.ctrlKey &&
-      !e.metaKey &&
-      !state.showFavouritesOnly
-    ) {
-      toggleShuffle();
-    } else if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey) {
-      toggleFavouritesOnly();
-    } else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) {
-      // Keyboard shortcut for bookmarking
-      const currentCard = getCurrentCard();
-      if (currentCard) {
-        toggleFavourite(currentCard);
-        updateBookmarkButton();
+    } else {
+      // In lecture mode, arrow keys navigate
+      if (e.key === "ArrowRight") nextCard();
+      else if (e.key === "ArrowLeft") prevCard();
+      else if (e.key === " ") {
+        e.preventDefault();
+        if (!state.isTransitioning) {
+          setFlipped(!state.flipped);
+        }
+      } else if (
+        e.key.toLowerCase() === "r" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !state.showFavouritesOnly
+      ) {
+        toggleShuffle();
+      } else if (e.key.toLowerCase() === "f" && !e.ctrlKey && !e.metaKey) {
+        toggleFavouritesOnly();
+      } else if (e.key.toLowerCase() === "b" && !e.ctrlKey && !e.metaKey) {
+        // Keyboard shortcut for bookmarking
+        const currentCard = getCurrentCard();
+        if (currentCard) {
+          toggleFavourite(currentCard);
+          updateBookmarkButton();
+        }
       }
     }
   });
@@ -1575,6 +2174,7 @@ function bindUI() {
   bindUI();
   updateShuffleUI();
   updateFavouritesUI();
+  updateRevisionUI();
   updateTimerUI();
   updateDifficultyUI();
 
@@ -1590,4 +2190,7 @@ function bindUI() {
 
   const initial = buildChapterSelect(chapters);
   await loadChapter(initial);
+
+  // Check and show welcome modal if needed
+  checkWelcomeModal();
 })();

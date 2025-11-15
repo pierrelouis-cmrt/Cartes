@@ -1,0 +1,26 @@
+# --- Detect Safari user agents ---
+
+# Mark requests that contain "Safari"
+
+SetEnvIfNoCase User-Agent "Safari" IS_SAFARI
+
+# But remove the flag if it's actually Chrome / Edge / Chromium
+
+SetEnvIfNoCase User-Agent "Chrome" IS_SAFARI=
+SetEnvIfNoCase User-Agent "Chromium" IS_SAFARI=
+SetEnvIfNoCase User-Agent "Edg" IS_SAFARI=
+
+# --- Cache rules for flashcards/ directory ---
+
+<IfModule mod_headers.c>
+
+    <LocationMatch "^/flashcards/">
+        # Adjust duration as you like (here: 7 days)
+        Header set Cache-Control "public, max-age=604800, immutable"
+    </LocationMatch>
+
+    <LocationMatch "^/flashcards/.*\.(?:png|jpe?g|webp|gif|avif|svg)$">
+        Header set Cache-Control "no-store" env=IS_SAFARI
+    </LocationMatch>
+
+</IfModule>

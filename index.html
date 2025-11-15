@@ -54,7 +54,7 @@
       <header>
         <div class="header-content">
           <h1>
-            Cartes mémoire
+            Flashcards
             <select
               id="chapterSelect"
               class="chapter-select"
@@ -63,6 +63,31 @@
               <!-- options générées dynamiquement -->
             </select>
           </h1>
+          <div class="mode-toggle-wrapper">
+            <button
+              id="modeToggle"
+              class="mode-toggle"
+              title="Basculer entre mode lecture et révision"
+              aria-label="Basculer le mode"
+            >
+              <span class="toggle-text">Lecture</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="toggle-icon"
+              >
+                <path d="M7 7h10v10" />
+                <path d="M7 17 17 7" />
+              </svg>
+            </button>
+          </div>
           <div class="info-wrapper">
             <button
               id="infoBtn"
@@ -198,6 +223,58 @@
                   <path d="m12 5 7 7-7 7" />
                 </svg>
               </button>
+
+              <!-- Révision mode buttons (hidden by default) -->
+              <button
+                id="pasOkBtn"
+                class="btn btn-pas-ok"
+                style="display: none"
+                title="Marquer cette carte à revoir (←)"
+                aria-label="À revoir"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-circle-x-icon lucide-circle-x btn-icon"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m15 9-6 6" />
+                  <path d="m9 9 6 6" />
+                </svg>
+                <span class="btn-text">À revoir</span>
+              </button>
+
+              <button
+                id="okBtn"
+                class="btn btn-ok"
+                style="display: none"
+                title="Carte maîtrisée (→)"
+                aria-label="Maîtrisé"
+              >
+                <span class="btn-text">Maîtrisé</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-circle-check-icon lucide-circle-check btn-icon"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </button>
             </div>
 
             <div class="filter-controls">
@@ -291,10 +368,110 @@
               </div>
             </div>
 
-            <div class="counter" id="counter">Chargement…</div>
+            <div class="counter-wrapper">
+              <span class="counter" id="counter">Chargement…</span>
+              <button
+                id="restartRevisionInlineBtn"
+                class="btn-restart"
+                style="display: none"
+                title="Recommencer depuis le début"
+                aria-label="Recommencer la révision"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="lucide lucide-refresh-ccw"
+                >
+                  <path
+                    d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+                  />
+                  <path d="M3 3v5h5" />
+                  <path
+                    d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
+                  />
+                  <path d="M16 16h5v5" />
+                </svg>
+                <span class="btn-restart-text">Reset</span>
+              </button>
+            </div>
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- Welcome modal -->
+    <div id="welcomeModal" class="modal">
+      <div class="modal-content modal-welcome">
+        <div class="modal-version">Flashcards v2.0.0</div>
+        <h2>Deux modes disponibles</h2>
+        <div class="modal-modes">
+          <div class="mode-item">
+            <span class="mode-name">Mode Lecture</span>
+            <span class="mode-desc"
+              >Le mode que vous connaissez déjà pour parcourir les cartes</span
+            >
+          </div>
+          <div class="mode-item mode-new">
+            <span class="mode-name"
+              >Mode Révision <span class="badge-new">nouveau</span></span
+            >
+            <span class="mode-desc"
+              >Retire tous les filtres et fonctionne comme Quizlet</span
+            >
+          </div>
+        </div>
+        <p class="modal-hint">
+          Passez d'un mode à l'autre via le bouton en haut à droite
+        </p>
+        <button id="dismissWelcomeBtn" class="modal-btn">Compris</button>
+      </div>
+    </div>
+
+    <!-- Révision complete modal -->
+    <div id="revisionCompleteModal" class="modal">
+      <div class="modal-content modal-complete">
+        <div class="complete-checkmark">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="lucide lucide-book-check-icon lucide-book-check"
+          >
+            <path
+              d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"
+            />
+            <path d="m9 9.5 2 2 4-4" />
+          </svg>
+        </div>
+        <h2>Chapitre maîtrisé</h2>
+        <p class="complete-stats">
+          <span id="revisionRounds">1</span> tour<span id="revisionRoundsPlural"
+            >s</span
+          >
+          complété<span id="revisionRoundsPlural2">s</span>
+        </p>
+        <div class="modal-actions">
+          <button id="restartRevisionBtn" class="modal-btn modal-btn-primary">
+            Recommencer
+          </button>
+          <button id="backToLectureBtn" class="modal-btn modal-btn-ghost">
+            Mode lecture
+          </button>
+        </div>
+      </div>
     </div>
 
     <footer class="footer-section">
