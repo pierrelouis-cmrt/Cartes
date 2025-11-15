@@ -50,20 +50,15 @@
       src="https://cloud.umami.is/script.js"
       data-website-id="a052a820-83ee-48c6-bf8a-9b3c2b3a8fd3"
     ></script>
+    <!-- build:hashed-assets -->
+    <!-- Managed by scripts/build-assets.mjs -->
+    <link rel="preload" as="style" href="assets/styles-55361f948c10.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="assets/styles-55361f948c10.css" integrity="sha384-O3dygIzI4uHZT2X5/flS+IxdIe7J3uJpEX56fHA59tXXL5aZNV5HAcw0avZaox0/" crossorigin="anonymous" />
     <noscript>
-      <link rel="stylesheet" href="styles.css?v=noscript" />
+      <link rel="stylesheet" href="assets/styles-55361f948c10.css" integrity="sha384-O3dygIzI4uHZT2X5/flS+IxdIe7J3uJpEX56fHA59tXXL5aZNV5HAcw0avZaox0/" crossorigin="anonymous" />
     </noscript>
-    <script>
-      (function enforceFreshStylesheet() {
-        var href = "styles.css";
-        var version = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
-        var link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = href + (href.indexOf("?") === -1 ? "?" : "&") + "v=" + version;
-        link.crossOrigin = "anonymous";
-        document.head.appendChild(link);
-      })();
-    </script>
+    <script defer src="assets/app-43a97a01270c.js" integrity="sha384-TmsT+Nkg4k2xF2CaW9AGnrQwAtziCW5IMeiLeQPyBTRr7pwsLEKertYWLsbZkI4P" crossorigin="anonymous"></script>
+    <!-- endbuild -->
   </head>
   <body>
     <div class="app-container">
@@ -537,16 +532,5 @@
         </div>
       </div>
     </footer>
-    <script>
-      (function enforceFreshAppScript() {
-        var src = "app.js";
-        var version = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
-        var script = document.createElement("script");
-        script.src = src + (src.indexOf("?") === -1 ? "?" : "&") + "v=" + version;
-        script.async = false;
-        script.crossOrigin = "anonymous";
-        document.body.appendChild(script);
-      })();
-    </script>
   </body>
 </html>
