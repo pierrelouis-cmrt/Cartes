@@ -4,8 +4,8 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
-    "build:assets": "node scripts/build-assets.mjs",
-    "check:assets": "node scripts/build-assets.mjs --check"
+    "build": "node scripts/build-assets.mjs",
+    "check": "node scripts/build-assets.mjs --check"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -19,6 +19,7 @@ const MAX_CHAPTERS_PROBE = 20;
 const MAX_PROBE = 100;
 const PRELOAD_RADIUS = 2;
 const MAX_HISTORY = 5; // Maximum history for shuffle mode
+const WELCOME_MODAL_ENABLED = false; // Toggle to re-enable the welcome/update modal
 const WELCOME_MODAL_VERSION = "1.0"; // Change this to show welcome modal again
 const FAST_NAV_THRESHOLD = 2; // Number of quick clicks before skipping animations
 const FAST_NAV_WINDOW_MS = 450; // Time window to consider clicks as part of the same burst
@@ -902,6 +903,7 @@ function toggleRevisionMode() {
 
 // Welcome modal functions
 function checkWelcomeModal() {
+  if (!WELCOME_MODAL_ENABLED) return;
   const seenVersion = localStorage.getItem("fc_welcome_modal_version");
   if (seenVersion !== WELCOME_MODAL_VERSION) {
     showWelcomeModal();

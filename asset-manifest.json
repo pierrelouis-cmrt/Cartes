@@ -1,5 +1,5 @@
 {
-  "buildId": "9c6127e5b3e7",
+  "buildId": "b3228867a131",
   "css": {
     "source": "styles.css",
     "file": "assets/styles-55361f948c10.css",
@@ -9,9 +9,9 @@
   },
   "js": {
     "source": "app.js",
-    "file": "assets/app-43a97a01270c.js",
-    "hash": "43a97a01270c",
-    "integrity": "sha384-TmsT+Nkg4k2xF2CaW9AGnrQwAtziCW5IMeiLeQPyBTRr7pwsLEKertYWLsbZkI4P",
-    "bytes": 65457
+    "file": "assets/app-d6a748025ad0.js",
+    "hash": "d6a748025ad0",
+    "integrity": "sha384-4tjknANd1l8vNQ2HiVO6gXHmCa9jKfkDAKp9F5l6iLUC4AcDrhYsT8/RwxCkGQkI",
+    "bytes": 65580
   }
 }
