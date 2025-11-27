@@ -35,13 +35,13 @@ jobs:
 
       - name: Check cached assets
         id: check
-        run: npm run check:assets
+        run: npm run check
         continue-on-error: true
 
       - name: Run build for diagnostics
         if: steps.check.outcome == 'failure'
         run: |
-          npm run build:assets
+          npm run build
           git status --short assets asset-manifest.json index.html || true
-          echo "::error::Hashed assets were updated in CI. Please run 'npm run build:assets' locally and commit the results."
+          echo "::error::Hashed assets were updated in CI. Please run 'npm run build' locally and commit the results."
           exit 1
