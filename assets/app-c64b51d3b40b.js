@@ -951,6 +951,8 @@ const state = {
   navLastTime: 0,
   navFastMode: false,
   navQueue: [],
+  lastCardBeforeFavourites: null,
+  wasShuffleBeforeFavourites: false,
   // Révision mode state
   revisionMode: JSON.parse(localStorage.getItem("fc_revision_mode") || "false"),
   revisionIncorrect: new Set(), // Cards marked "Pas OK" in current round
@@ -1450,8 +1452,9 @@ function rebuildDeck(keepCardNo = null) {
       // Keep the card in history
       if (!state.history.includes(keepCardNo)) {
         state.history = [keepCardNo];
-        state.historyIndex = 0;
       }
+      state.historyIndex = state.history.indexOf(keepCardNo);
+      if (state.historyIndex < 0) state.historyIndex = 0;
     } else {
       // Filter history to only include cards still in deck
       state.history = state.history.filter((card) => newDeck.includes(card));
@@ -1911,12 +1914,29 @@ function toggleShuffle() {
 }
 
 function toggleFavouritesOnly() {
-  state.showFavouritesOnly = !state.showFavouritesOnly;
-  let keep = getCurrentCard();
+  if (state.isTransitioning) return;
 
-  if (state.showFavouritesOnly && state.shuffle) {
-    toggleShuffle();
+  const entering = !state.showFavouritesOnly;
+  if (entering) {
+    state.lastCardBeforeFavourites = getCurrentCard();
+    state.wasShuffleBeforeFavourites = state.shuffle;
+  }
+
+  state.showFavouritesOnly = !state.showFavouritesOnly;
+  let keep;
+
+  if (state.showFavouritesOnly) {
     keep = getCurrentCard();
+    if (state.shuffle) {
+      toggleShuffle();
+      keep = getCurrentCard();
+    }
+  } else {
+    keep = state.lastCardBeforeFavourites;
+    if (state.wasShuffleBeforeFavourites && !state.shuffle) {
+      state.shuffle = true;
+      localStorage.setItem("fc_shuffle", "true");
+    }
   }
 
   rebuildDeck(keep);

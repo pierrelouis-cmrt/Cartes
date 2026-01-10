@@ -388,14 +388,20 @@ h1 {
   touch-action: manipulation;
 }
 
-.chapter-select:hover {
+.chapter-select:focus {
+  outline: none;
+  border-color: var(--color-grey-border);
+}
+
+.chapter-select:hover,
+.chapter-select:focus:hover {
   border-color: var(--color-grey-contrast);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.chapter-select:focus {
-  outline: none;
+.chapter-select:focus-visible {
   border-color: var(--color-grey-contrast);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Main content area */
