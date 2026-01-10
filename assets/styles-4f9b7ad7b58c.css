@@ -168,6 +168,7 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 * {
@@ -551,7 +552,7 @@ h1 {
 }
 
 .card-shell.scaling-in {
-  animation: scaleIn 300ms cubic-bezier(0.2, 0, 0.2, 1) forwards;
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes swipeLeftOut {
@@ -579,11 +580,11 @@ h1 {
 @keyframes scaleIn {
   0% {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.8) translateY(10px);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
@@ -908,6 +909,20 @@ h1 {
   color: var(--bordered-hover-color);
 }
 
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+body.modal-open .app-container,
+body.modal-open .footer-section {
+  pointer-events: none;
+}
+
 /* Modal base styles - refined */
 .modal {
   position: fixed;
@@ -935,7 +950,7 @@ h1 {
 
 .modal-content {
   background: var(--color-white);
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 40px;
   transform: translateY(20px) scale(0.95);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1031,69 +1046,105 @@ h1 {
 /* Completion modal specific */
 .modal-complete {
   text-align: center;
-  padding: 48px 40px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .complete-checkmark {
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: var(--color-woodsmoke);
-  color: var(--color-white);
+  background: transparent;
+  color: var(--color-woodsmoke);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  font-weight: 300;
-  margin: 0 auto 24px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--color-grey-border);
+}
+
+.complete-checkmark svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.5;
 }
 
 .modal-complete h2 {
   font-family: var(--font-family-display);
-  font-size: 22px;
-  font-weight: 400;
+  font-size: 24px;
+  font-weight: 450;
   margin: 0 0 8px 0;
   color: var(--color-woodsmoke);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .complete-stats {
-  font-size: 14px;
+  font-family: var(--font-family-base);
+  font-size: 15px;
   color: var(--color-grey-mid);
   margin: 0 0 32px 0;
   font-weight: 400;
+  line-height: 1.5;
 }
 
 .complete-stats span:first-child {
   color: var(--color-woodsmoke);
-  font-weight: 600;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Modal buttons - refined */
 .modal-btn {
   width: 100%;
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 14px 24px;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 10px;
+  border-radius: var(--radius-pill);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   border: none;
   font-family: var(--font-family-base);
+  display: flex;
   justify-content: center;
+  align-items: center;
+  letter-spacing: -0.01em;
 }
 
-.modal-btn-primary,
-.modal-welcome .modal-btn {
+.modal-btn-primary {
+  background: var(--color-woodsmoke);
+  color: var(--color-white);
+  border: 1px solid var(--color-woodsmoke);
+  font-weight: 600;
+}
+
+.modal-btn-primary:hover {
+  background: #3a3a3a;
+  color: var(--color-white);
+  border-color: #3a3a3a;
+}
+
+.modal-btn-primary:active {
   background: var(--color-woodsmoke);
   color: var(--color-white);
 }
 
-.modal-btn-primary:hover,
+.modal-welcome .modal-btn {
+  background: var(--color-woodsmoke);
+  color: var(--color-white);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .modal-welcome .modal-btn:hover {
   background: var(--color-grey-contrast);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-welcome .modal-btn:active {
+  transform: translateY(0);
 }
 
 .modal-btn-ghost {
@@ -1103,51 +1154,68 @@ h1 {
 }
 
 .modal-btn-ghost:hover {
-  background: rgba(14, 14, 16, 0.02);
-  color: var(--color-woodsmoke);
+  background: rgba(14, 14, 16, 0.04);
   border-color: var(--color-grey-mid);
+  color: var(--color-grey-contrast);
 }
 
 .modal-actions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
 }
 
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
   .modal {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.75);
   }
 
   .modal-content {
-    background: #1a1a1a;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  }
-
-  .mode-item {
-    border-color: #2a2a2a;
-  }
-
-  .mode-item.mode-new {
-    background: linear-gradient(135deg, rgba(240, 240, 240, 0.02), transparent);
+    background: #161618;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .complete-checkmark {
-    background: var(--color-woodsmoke);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--color-woodsmoke);
+  }
+
+  .complete-checkmark svg {
+    stroke: var(--color-woodsmoke);
+  }
+
+  .modal-welcome .modal-btn {
+    background: linear-gradient(135deg, #27272d, #1b1b1f);
+    color: var(--color-woodsmoke);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+      0 10px 24px rgba(0, 0, 0, 0.45),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .modal-welcome .modal-btn:hover {
+    background: linear-gradient(135deg, #303037, #222227);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
+  .modal-btn-primary:hover {
+    background: #cfcfcf;
+    color: var(--color-white);
+    border-color: #cfcfcf;
   }
 
   .modal-btn-ghost {
-    border-color: #2a2a2a;
+    color: var(--color-grey-mid);
+    border-color: var(--color-grey-border);
   }
 
   .modal-btn-ghost:hover {
-    background: rgba(240, 240, 240, 0.05);
-  }
-
-  .badge-new {
-    background: var(--color-woodsmoke);
-    color: var(--color-white);
+    background: rgba(240, 240, 240, 0.08);
+    border-color: var(--color-grey-mid);
   }
 }
 
@@ -1700,6 +1768,151 @@ h1 {
 }
 
 /* Utility classes */
+/* ===== Mobile Swipe Gesture Styles ===== */
+
+/* Swipe drop zones - side boxes that appear when dragging */
+.swipe-zone {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(15vw, 60px);
+  height: 35vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  user-select: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.swipe-zone-ok {
+  right: 4px;
+  background: rgba(34, 197, 94, 0.05);
+  border: 1.5px dashed rgba(34, 197, 94, 0.3);
+  color: var(--green);
+}
+
+.swipe-zone-review {
+  left: 4px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1.5px dashed rgba(239, 68, 68, 0.3);
+  color: var(--red);
+}
+
+.swipe-zone.active {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.05);
+  border-style: solid;
+  border-width: 1.5px;
+  background: rgba(34, 197, 94, 0.12);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.swipe-zone-review.active {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.swipe-zone-icon {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.5;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+/* Card shell during swipe drag - disable transitions for instant response */
+.card-shell.swiping {
+  transition: none !important;
+  cursor: grabbing;
+}
+
+/* Snap-back animation when released before threshold */
+.card-shell.snap-back {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+/* Swipe exit animation - uses CSS custom properties for start position */
+.card-shell.swipe-exit {
+  transition: none !important;
+}
+
+@keyframes swipeExitRight {
+  from {
+    transform: translate3d(var(--swipe-start-x, 0), var(--swipe-start-y, 0), 0) rotate(var(--swipe-start-rotation, 0deg));
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(calc(100vw + 50px), var(--swipe-start-y, 0), 0) rotate(20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeExitLeft {
+  from {
+    transform: translate3d(var(--swipe-start-x, 0), var(--swipe-start-y, 0), 0) rotate(var(--swipe-start-rotation, 0deg));
+    opacity: 1;
+  }
+  to {
+    transform: translate3d(calc(-100vw - 50px), var(--swipe-start-y, 0), 0) rotate(-20deg);
+    opacity: 0;
+  }
+}
+
+.card-shell.swipe-exit-right {
+  animation: swipeExitRight 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+.card-shell.swipe-exit-left {
+  animation: swipeExitLeft 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+/* Ensure card doesn't interfere with swipe on touch */
+.is-touch .card-shell {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* In revision mode on touch, disable all browser handling to prevent scrolling */
+.mode-revision .card-shell {
+  touch-action: none;
+}
+
+/* Prevent hover effects during swipe */
+.card-shell.swiping:hover {
+  transform: none;
+}
+
+/* Dark mode adjustments for drop zones */
+@media (prefers-color-scheme: dark) {
+  .swipe-zone-ok {
+    background: rgba(34, 197, 94, 0.12);
+  }
+
+  .swipe-zone-ok.active {
+    background: rgba(34, 197, 94, 0.2);
+  }
+
+  .swipe-zone-review {
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .swipe-zone-review.active {
+    background: rgba(239, 68, 68, 0.2);
+  }
+}
+
+/* Hide drop zones on non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .swipe-zone {
+    display: none;
+  }
+}
+
+/* ===== End Mobile Swipe Styles ===== */
+
 .hidden {
   display: none !important;
 }

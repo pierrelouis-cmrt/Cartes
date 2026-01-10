@@ -763,13 +763,30 @@ function swipeCard(direction, callback) {
   // Prevent interaction during animation
   state.isTransitioning = true;
 
+  // Reset any existing transforms from swipe gesture
+  swipeGesture.resetCardTransform();
+  cardShell.style.transform = "";
+
+  // Force reflow
+  void cardShell.offsetWidth;
+
   // Add swipe animation class
   const animationClass = direction === "right" ? "swiping-right" : "swiping-left";
   cardShell.classList.add(animationClass);
 
   // Wait for animation to complete
   setTimeout(() => {
+    // Hide card to prevent flash of old content - aggressively for Safari
+    cardShell.style.transition = "none";
+    cardShell.style.opacity = "0";
+    cardShell.style.visibility = "hidden";
+    
+    // Force reflow
+    void cardShell.offsetWidth;
+    
     cardShell.classList.remove(animationClass);
+    // Reset transform for next card
+    cardShell.style.transform = "";
     state.isTransitioning = false;
 
     // Call the callback to load next card or handle completion
@@ -777,7 +794,7 @@ function swipeCard(direction, callback) {
   }, 300);
 }
 
-function showCurrentWithScaleIn() {
+async function showCurrentWithScaleIn() {
   // Show current card with scale-in animation
   const cardShell = qs("#cardShell");
   if (!cardShell) {
@@ -786,15 +803,35 @@ function showCurrentWithScaleIn() {
     return;
   }
 
+  // Reset any swipe gesture transforms before animating in
+  swipeGesture.resetCardTransform();
+
+  // Ensure transform is reset for clean animation start
+  // And ensure it stays hidden without transitions interfering
+  cardShell.style.transition = "none";
+  cardShell.style.transform = "";
+  cardShell.style.opacity = "0";
+  cardShell.style.visibility = "hidden";
+
+  // Force a reflow to ensure styles are applied
+  void cardShell.offsetWidth;
+
+  // Show the card (loading images) but keep it hidden
+  await showCurrent("none", { keepHidden: true });
+
   // Add scaling-in class
   cardShell.classList.add("scaling-in");
-
-  // Show the card
-  showCurrent();
+  
+  // Make visible (the animation keyframes start at opacity 0)
+  // We need to remove the inline styles that hide it
+  cardShell.style.visibility = "";
+  cardShell.style.opacity = "";
 
   // Remove class after animation
   setTimeout(() => {
     cardShell.classList.remove("scaling-in");
+    // Restore transitions
+    cardShell.style.transition = "";
   }, 300);
 }
 
@@ -828,6 +865,31 @@ function startNewRevisionRound() {
   updateCounter();
 }
 
+let modalScrollY = 0;
+let modalLockActive = false;
+
+function updateModalOpenState() {
+  if (!document.body) return;
+  const hasOpenModal = Boolean(qs(".modal.show"));
+  if (hasOpenModal && !modalLockActive) {
+    modalScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.top = `-${modalScrollY}px`;
+    document.body.classList.add("modal-open");
+    modalLockActive = true;
+  } else if (!hasOpenModal && modalLockActive) {
+    document.body.classList.remove("modal-open");
+    document.body.style.top = "";
+    window.scrollTo(0, modalScrollY);
+    modalLockActive = false;
+  }
+}
+
+function setModalVisibility(modal, shouldShow) {
+  if (!modal) return;
+  modal.classList.toggle("show", shouldShow);
+  updateModalOpenState();
+}
+
 function showRevisionComplete() {
   // Show congratulations modal
   const modal = qs("#revisionCompleteModal");
@@ -842,7 +904,7 @@ function showRevisionComplete() {
     if (pluralCompleteEl) {
       pluralCompleteEl.textContent = state.revisionRound > 1 ? "s" : "";
     }
-    modal.classList.add("show");
+    setModalVisibility(modal, true);
   }
 }
 
@@ -877,6 +939,9 @@ function toggleRevisionMode() {
   state.revisionMode = !state.revisionMode;
   localStorage.setItem("fc_revision_mode", JSON.stringify(state.revisionMode));
   resetFastNavState();
+  
+  // Toggle body class for CSS targeting (e.g. touch-action)
+  document.body.classList.toggle("mode-revision", state.revisionMode);
 
   if (state.revisionMode) {
     // Entering révision mode
@@ -931,15 +996,13 @@ function checkWelcomeModal() {
 
 function showWelcomeModal() {
   const modal = qs("#welcomeModal");
-  if (modal) {
-    modal.classList.add("show");
-  }
+  setModalVisibility(modal, true);
 }
 
 function dismissWelcomeModal() {
   const modal = qs("#welcomeModal");
   if (modal) {
-    modal.classList.remove("show");
+    setModalVisibility(modal, false);
     localStorage.setItem("fc_welcome_modal_version", WELCOME_MODAL_VERSION);
   }
 }
@@ -1589,6 +1652,8 @@ function waitAnimationEnd(el, name, fallback = 600) {
 async function showCurrent(direction = "none", options = {}) {
   if (state.isTransitioning) return;
 
+  const keepHidden = Boolean(options.keepHidden);
+
   const n = getCurrentCard();
   if (!n) return;
 
@@ -1679,6 +1744,13 @@ async function showCurrent(direction = "none", options = {}) {
     state.imagesLoaded.add(n);
     frontImg.classList.add("loaded");
     backImg.classList.add("loaded");
+    
+    if (!keepHidden) {
+      cardShell.style.opacity = "";
+      cardShell.style.visibility = "";
+      cardShell.style.transition = "";
+    }
+    
     hideSkeleton();
     updateCounter();
     updateBookmarkButton();
@@ -2140,6 +2212,8 @@ function updateDifficultyUI() {
 function bindUI() {
   const shell = qs("#cardShell");
   shell.addEventListener("click", (e) => {
+    // Don't flip if we were swiping (swipe gesture handled separately)
+    if (typeof swipeGesture !== "undefined" && swipeGesture.hasMovedHorizontally) return;
     if (!state.isTransitioning) {
       setFlipped(!state.flipped);
     }
@@ -2196,13 +2270,13 @@ function bindUI() {
     restartRevisionBtn.addEventListener("click", () => {
       restartRevisionSession();
       const modal = qs("#revisionCompleteModal");
-      if (modal) modal.classList.remove("show");
+      setModalVisibility(modal, false);
     });
   }
   if (backToLectureBtn) {
     backToLectureBtn.addEventListener("click", () => {
       const modal = qs("#revisionCompleteModal");
-      if (modal) modal.classList.remove("show");
+      setModalVisibility(modal, false);
       // Switch to lecture mode
       toggleRevisionMode();
     });
@@ -2367,8 +2441,526 @@ function bindUI() {
   });
 }
 
+/* ==========================
+   Mobile Swipe Gesture Handler
+   ========================== */
+const swipeGesture = {
+  // Configuration
+  THRESHOLD_RATIO: 0.25,
+  VELOCITY_THRESHOLD: 0.3, // px/ms
+  MAX_ROTATION: 15, // degrees of rotation at threshold
+  VERTICAL_FACTOR: 0.1, // How much vertical movement affects card (subtle)
+  VELOCITY_SAMPLES: 5, // number of samples for velocity calculation
+
+  // State
+  isActive: false,
+  startX: 0,
+  startY: 0,
+  currentX: 0,
+  currentY: 0,
+  deltaX: 0,
+  deltaY: 0,
+  velocityHistory: [],
+  cardShell: null,
+  zoneOk: null,
+  zoneReview: null,
+  isTouchDevice: false,
+  hasMovedHorizontally: false,
+  rafId: null,
+
+  init() {
+    this.isTouchDevice =
+      "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    if (!this.isTouchDevice) return;
+
+    this.cardShell = qs("#cardShell");
+    this.zoneOk = qs(".swipe-zone-ok");
+    this.zoneReview = qs(".swipe-zone-review");
+
+    if (!this.cardShell) return;
+
+    // Bind event handlers
+    this.cardShell.addEventListener("touchstart", this.onTouchStart.bind(this), { passive: true });
+    this.cardShell.addEventListener("touchmove", this.onTouchMove.bind(this), { passive: false });
+    this.cardShell.addEventListener("touchend", this.onTouchEnd.bind(this), { passive: true });
+    this.cardShell.addEventListener("touchcancel", this.onTouchCancel.bind(this), { passive: true });
+  },
+
+  getThreshold() {
+    return window.innerWidth * this.THRESHOLD_RATIO;
+  },
+
+  onTouchStart(e) {
+    // Only active in revision mode
+    if (!state.revisionMode) return;
+    if (state.isTransitioning) return;
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    this.startX = touch.clientX;
+    this.startY = touch.clientY;
+    this.currentX = touch.clientX;
+    this.currentY = touch.clientY;
+    this.deltaX = 0;
+    this.deltaY = 0;
+    this.velocityHistory = [];
+    this.hasMovedHorizontally = false;
+    this.isActive = true;
+
+    // Add swiping class for instant response (no transition delay)
+    this.cardShell.classList.add("swiping");
+    // Add revision-active class to body for touch-action CSS
+    document.body.classList.add("revision-active");
+
+    this.startRaf();
+  },
+
+  startRaf() {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    const loop = () => {
+      if (!this.isActive) return;
+      this.updateCardTransform();
+      this.updateZones();
+      this.rafId = requestAnimationFrame(loop);
+    };
+    this.rafId = requestAnimationFrame(loop);
+  },
+
+  stopRaf() {
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  },
+
+  onTouchMove(e) {
+    if (!this.isActive) return;
+    if (!state.revisionMode) {
+      this.reset();
+      return;
+    }
+    if (e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    const newDeltaX = touch.clientX - this.startX;
+    const newDeltaY = touch.clientY - this.startY;
+
+    // Determine if this is a horizontal or vertical gesture
+    if (!this.hasMovedHorizontally) {
+      const absX = Math.abs(newDeltaX);
+      const absY = Math.abs(newDeltaY);
+
+      // If vertical movement is dominant, let the browser handle scrolling
+      if (absY > absX && absY > 10) {
+        this.reset();
+        return;
+      }
+
+      // If horizontal movement is dominant, take control
+      if (absX > absY && absX > 10) {
+        this.hasMovedHorizontally = true;
+      }
+    }
+
+    // Once we've started horizontal movement, prevent vertical scrolling
+    if (this.hasMovedHorizontally) {
+      e.preventDefault();
+    }
+
+    this.currentX = touch.clientX;
+    this.currentY = touch.clientY;
+    this.deltaX = newDeltaX;
+    this.deltaY = newDeltaY;
+
+    // Track velocity
+    const now = Date.now();
+    this.velocityHistory.push({ x: this.deltaX, y: this.deltaY, time: now });
+    if (this.velocityHistory.length > this.VELOCITY_SAMPLES) {
+      this.velocityHistory.shift();
+    }
+  },
+
+  onTouchEnd(e) {
+    this.stopRaf();
+    if (!this.isActive) return;
+
+    const velocity = this.calculateVelocity();
+    const threshold = this.getThreshold();
+    const absVelocity = Math.abs(velocity);
+
+    // Determine action based on position and velocity
+    let action = null;
+
+    // Quick flick detection - lower threshold for fast swipes
+    if (absVelocity > this.VELOCITY_THRESHOLD) {
+      if (velocity > 0) {
+        action = "ok";
+      } else {
+        action = "review";
+      }
+    }
+    // Position-based detection
+    else if (Math.abs(this.deltaX) > threshold) {
+      if (this.deltaX > 0) {
+        action = "ok";
+      } else {
+        action = "review";
+      }
+    }
+
+    if (action) {
+      this.completeSwipe(action);
+    } else {
+      this.snapBack();
+    }
+  },
+
+  onTouchCancel() {
+    this.stopRaf();
+    this.snapBack();
+  },
+
+  calculateVelocity() {
+    if (this.velocityHistory.length < 2) return 0;
+
+    const recent = this.velocityHistory.slice(-3);
+    if (recent.length < 2) return 0;
+
+    const first = recent[0];
+    const last = recent[recent.length - 1];
+    const timeDiff = last.time - first.time;
+
+    if (timeDiff === 0) return 0;
+
+    return (last.x - first.x) / timeDiff;
+  },
+
+  updateCardTransform() {
+    if (!this.cardShell) return;
+
+    const threshold = this.getThreshold();
+    // Calculate rotation based on delta (positive = clockwise)
+    const rotation = (this.deltaX / threshold) * this.MAX_ROTATION;
+    // Clamp rotation
+    const clampedRotation = Math.max(-this.MAX_ROTATION, Math.min(this.MAX_ROTATION, rotation));
+    // Apply subtle vertical movement
+    const verticalOffset = this.deltaY * this.VERTICAL_FACTOR;
+
+    // Use translate3d for GPU acceleration
+    this.cardShell.style.transform = `translate3d(${this.deltaX}px, ${verticalOffset}px, 0) rotate(${clampedRotation}deg)`;
+  },
+
+  updateZones() {
+    if (!this.zoneOk || !this.zoneReview) return;
+
+    const threshold = this.getThreshold();
+    const progress = Math.abs(this.deltaX) / threshold;
+    // Show zone ONLY when threshold is reached (user can let go)
+    const shouldShowZone = progress >= 1.0;
+
+    if (this.deltaX > 0) {
+      if (shouldShowZone) {
+        this.zoneOk.classList.add("active");
+      } else {
+        this.zoneOk.classList.remove("active");
+      }
+      this.zoneReview.classList.remove("active");
+    } else if (this.deltaX < 0) {
+      if (shouldShowZone) {
+        this.zoneReview.classList.add("active");
+      } else {
+        this.zoneReview.classList.remove("active");
+      }
+      this.zoneOk.classList.remove("active");
+    } else {
+      this.zoneOk.classList.remove("active");
+      this.zoneReview.classList.remove("active");
+    }
+  },
+
+  completeSwipe(action) {
+    if (!this.cardShell) {
+      this.reset();
+      return;
+    }
+
+    // Store current position for animation start
+    const currentDeltaX = this.deltaX;
+    const currentDeltaY = this.deltaY * this.VERTICAL_FACTOR;
+    const threshold = this.getThreshold();
+    const currentRotation = (this.deltaX / threshold) * this.MAX_ROTATION;
+    const clampedRotation = Math.max(-this.MAX_ROTATION, Math.min(this.MAX_ROTATION, currentRotation));
+
+    // Remove swiping class
+    this.cardShell.classList.remove("swiping");
+
+    // Hide zones
+    if (this.zoneOk) this.zoneOk.classList.remove("active");
+    if (this.zoneReview) this.zoneReview.classList.remove("active");
+
+    // Set CSS custom properties for animation start position
+    this.cardShell.style.setProperty("--swipe-start-x", `${currentDeltaX}px`);
+    this.cardShell.style.setProperty("--swipe-start-y", `${currentDeltaY}px`);
+    this.cardShell.style.setProperty("--swipe-start-rotation", `${clampedRotation}deg`);
+
+    // Clear inline transform so animation can take over
+    this.cardShell.style.transform = "";
+
+    // Force reflow
+    void this.cardShell.offsetWidth;
+
+    // Add exit animation class
+    const exitClass = action === "ok" ? "swipe-exit-right" : "swipe-exit-left";
+    this.cardShell.classList.add("swipe-exit", exitClass);
+
+    // Prevent interaction
+    state.isTransitioning = true;
+
+    // Reset state
+    this.isActive = false;
+    document.body.classList.remove("revision-active");
+
+    // Start loading next card immediately to minimize gap
+    this.handleSwipeTransition(action);
+  },
+
+  wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  async handleSwipeTransition(action) {
+    try {
+      // Start exit animation wait (500ms matches CSS)
+      const animationPromise = this.wait(500);
+
+      // 1. Mark current card
+      const currentCard = getCurrentCard();
+      if (currentCard) {
+        if (action === "ok") {
+          state.revisionIncorrect.delete(currentCard);
+          state.revisionMastered.add(currentCard);
+          state.revisionSeen.add(currentCard);
+        } else {
+          state.revisionIncorrect.add(currentCard);
+          state.revisionSeen.add(currentCard);
+          state.revisionMastered.delete(currentCard);
+        }
+        saveRevisionProgress();
+      }
+
+      // 2. Check if round complete
+      if (checkRoundComplete()) {
+        await animationPromise;
+        this.resetCardTransform();
+        state.isTransitioning = false;
+        handleRoundComplete();
+        return;
+      }
+
+      // 3. Find next card
+      const unseenCards = state.deck.filter(card => !state.revisionSeen.has(card));
+      if (unseenCards.length === 0) {
+        await animationPromise;
+        this.resetCardTransform();
+        state.isTransitioning = false;
+        handleRoundComplete();
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * unseenCards.length);
+      const nextCardNo = unseenCards[randomIndex];
+
+      // 4. Preload images for next card
+      // We start loading immediately
+      const imageLoadPromise = Promise.all([
+        loadFrontImage(nextCardNo),
+        loadBackImage(nextCardNo)
+      ]);
+
+      // 5. Wait for BOTH animation and image loading (with timeout)
+      // If images take longer than 800ms (animation is 500ms), just proceed
+      // to avoid leaving the user with an empty screen.
+      const loadingOrTimeout = Promise.race([
+        imageLoadPromise,
+        this.wait(800).then(() => null) // Return null on timeout
+      ]);
+
+      const [_, imagesResult] = await Promise.all([
+        animationPromise,
+        loadingOrTimeout
+      ]);
+
+      // 6. Update State
+      state.history.push(nextCardNo);
+      if (state.history.length > MAX_HISTORY) {
+        state.history.shift();
+        state.historyIndex = MAX_HISTORY - 1;
+      } else {
+        state.historyIndex++;
+      }
+      state.unvisited.delete(nextCardNo);
+      saveHistory();
+
+      // 7. HIDE CARD IMMEDIATELY (Before touching DOM content)
+      // Aggressive hiding for Safari
+      this.cardShell.style.transition = "none";
+      this.cardShell.style.opacity = "0";
+      this.cardShell.style.visibility = "hidden";
+      void this.cardShell.offsetWidth; // Force reflow
+
+      // 8. Reset Transform (Card moves to center, but is hidden)
+      this.resetCardTransform();
+      void this.cardShell.offsetWidth; // Force reflow
+
+      // 9. Swap Images (While hidden at center)
+      const frontImg = qs("#frontImg");
+      const backImg = qs("#backImg");
+      
+      // Reset flip state silently
+      if (state.flipped) {
+        const card3d = qs("#card3d");
+        card3d.classList.add("no-anim");
+        card3d.classList.remove("flipped", "flipping");
+        card3d.setAttribute("aria-pressed", "false");
+        state.flipped = false;
+        void card3d.offsetHeight;
+        card3d.classList.remove("no-anim");
+      }
+
+      // If we have loaded results, use them. Otherwise rely on browser caching/loading
+      let front = { src: "", ok: false };
+      let back = { src: "", ok: false };
+      
+      if (imagesResult) {
+        [front, back] = imagesResult;
+      } else {
+        // Fallback if timeout occurred
+        const f = await loadFrontImage(nextCardNo, { probe: false });
+        const b = await loadBackImage(nextCardNo, { probe: false });
+        front = f;
+        back = b;
+      }
+
+      frontImg.src = front.src;
+      backImg.src = back.src;
+      
+      // Handle loaded state
+      if (imagesResult) {
+        frontImg.classList.add("loaded");
+        backImg.classList.add("loaded");
+      } else {
+        frontImg.classList.remove("loaded");
+        backImg.classList.remove("loaded");
+        if (frontImg.complete) frontImg.classList.add("loaded");
+        else frontImg.onload = () => frontImg.classList.add("loaded");
+        
+        if (backImg.complete) backImg.classList.add("loaded");
+        else backImg.onload = () => backImg.classList.add("loaded");
+      }
+
+      if (front.ok) {
+         state.sizes[nextCardNo] = { w: front.width, h: front.height };
+         sizeStageForImage(front.width, front.height);
+      } else if (back.ok) {
+         state.sizes[nextCardNo] = { w: back.width, h: back.height };
+         sizeStageForImage(back.width, back.height);
+      }
+
+      updateCounter();
+      storeCurrentCard(nextCardNo);
+
+      // 10. Prepare for entry
+      this.cardShell.classList.add("scaling-in");
+      
+      // Wait for a frame to ensure browser processed the hidden state and new content
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      
+      // 11. Reveal
+      this.cardShell.style.visibility = "";
+      this.cardShell.style.opacity = "";
+      
+      // Unlock interaction immediately so user can swipe while it scales in
+      state.isTransitioning = false;
+      
+      // Wait for entry animation cleanup
+      await this.wait(400); // Matches CSS scaleIn duration
+      
+      this.cardShell.classList.remove("scaling-in");
+      // Restore transitions
+      this.cardShell.style.transition = "";
+    } catch (e) {
+      console.error("Swipe transition error:", e);
+      this.resetCardTransform();
+      state.isTransitioning = false;
+      showCurrent(); // Fallback to ensure UI is valid
+    }
+  },
+
+  snapBack() {
+    if (!this.cardShell) {
+      this.reset();
+      return;
+    }
+
+    // Hide zones
+    if (this.zoneOk) this.zoneOk.classList.remove("active");
+    if (this.zoneReview) this.zoneReview.classList.remove("active");
+
+    // Add snap-back class for smooth transition
+    this.cardShell.classList.remove("swiping");
+    this.cardShell.classList.add("snap-back");
+
+    // Reset transform
+    this.cardShell.style.transform = "";
+
+    // Remove snap-back class after transition
+    setTimeout(() => {
+      if (this.cardShell) {
+        this.cardShell.classList.remove("snap-back");
+      }
+      this.reset();
+    }, 300);
+  },
+
+  reset() {
+    this.stopRaf();
+    this.isActive = false;
+    this.deltaX = 0;
+    this.deltaY = 0;
+    this.velocityHistory = [];
+    this.hasMovedHorizontally = false;
+    document.body.classList.remove("revision-active");
+
+    if (this.cardShell) {
+      this.cardShell.classList.remove("swiping");
+    }
+    if (this.zoneOk) this.zoneOk.classList.remove("active");
+    if (this.zoneReview) this.zoneReview.classList.remove("active");
+  },
+
+  // Called when transitioning cards to ensure clean state
+  resetCardTransform() {
+    if (this.cardShell) {
+      this.cardShell.style.transform = "";
+      this.cardShell.classList.remove("swiping", "snap-back", "swipe-exit", "swipe-exit-left", "swipe-exit-right");
+      this.cardShell.style.removeProperty("--swipe-start-x");
+      this.cardShell.style.removeProperty("--swipe-start-y");
+      this.cardShell.style.removeProperty("--swipe-start-rotation");
+    }
+    if (this.zoneOk) this.zoneOk.classList.remove("active");
+    if (this.zoneReview) this.zoneReview.classList.remove("active");
+  }
+};
+
 (async function init() {
+  // Restore body class for revision mode if needed
+  if (state.revisionMode) {
+    document.body.classList.add("mode-revision");
+  }
+
   bindUI();
+  swipeGesture.init();
   updateShuffleUI();
   updateFavouritesUI();
   updateRevisionUI();

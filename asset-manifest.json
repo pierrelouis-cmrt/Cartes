@@ -1,17 +1,17 @@
 {
-  "buildId": "b84cce934b60",
+  "buildId": "96a5b9b3787f",
   "css": {
     "source": "styles.css",
-    "file": "assets/styles-e496765ea111.css",
-    "hash": "e496765ea111",
-    "integrity": "sha384-yCDmkKR+6JJfehobPdwChAHJhu2keFW7U+aUym3cn+DOYa2fYxhDjiQGdznkfViW",
-    "bytes": 35421
+    "file": "assets/styles-4f9b7ad7b58c.css",
+    "hash": "4f9b7ad7b58c",
+    "integrity": "sha384-RYicwzntYWkmDzRRSOHYStD8+bpRARtuTECSfDS8IZjiCIGI+andFroWCxWsmpkL",
+    "bytes": 40474
   },
   "js": {
     "source": "app.js",
-    "file": "assets/app-b6d7155f9588.js",
-    "hash": "b6d7155f9588",
-    "integrity": "sha384-Ey2FhJyt9PCxnXOsnHz93S5iRg69PIeFjNfeD06sppR/wLcJNwoG5yxPAYBNIxH2",
-    "bytes": 68474
+    "file": "assets/app-53ae79d24c29.js",
+    "hash": "53ae79d24c29",
+    "integrity": "sha384-wJ6ymnGpOEDAJEJ4tpliYTmxmIg46jetFL8nLWeNlrTlk1RDv84jaYcy/JBE4/45",
+    "bytes": 86780
   }
 }

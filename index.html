@@ -52,12 +52,12 @@
     ></script>
     <!-- build:hashed-assets -->
     <!-- Managed by scripts/build-assets.mjs -->
-    <link rel="preload" as="style" href="assets/styles-e496765ea111.css" crossorigin="anonymous" />
-    <link rel="stylesheet" href="assets/styles-e496765ea111.css" integrity="sha384-yCDmkKR+6JJfehobPdwChAHJhu2keFW7U+aUym3cn+DOYa2fYxhDjiQGdznkfViW" crossorigin="anonymous" />
+    <link rel="preload" as="style" href="assets/styles-4f9b7ad7b58c.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="assets/styles-4f9b7ad7b58c.css" integrity="sha384-RYicwzntYWkmDzRRSOHYStD8+bpRARtuTECSfDS8IZjiCIGI+andFroWCxWsmpkL" crossorigin="anonymous" />
     <noscript>
-      <link rel="stylesheet" href="assets/styles-e496765ea111.css" integrity="sha384-yCDmkKR+6JJfehobPdwChAHJhu2keFW7U+aUym3cn+DOYa2fYxhDjiQGdznkfViW" crossorigin="anonymous" />
+      <link rel="stylesheet" href="assets/styles-4f9b7ad7b58c.css" integrity="sha384-RYicwzntYWkmDzRRSOHYStD8+bpRARtuTECSfDS8IZjiCIGI+andFroWCxWsmpkL" crossorigin="anonymous" />
     </noscript>
-    <script defer src="assets/app-b6d7155f9588.js" integrity="sha384-Ey2FhJyt9PCxnXOsnHz93S5iRg69PIeFjNfeD06sppR/wLcJNwoG5yxPAYBNIxH2" crossorigin="anonymous"></script>
+    <script defer src="assets/app-53ae79d24c29.js" integrity="sha384-wJ6ymnGpOEDAJEJ4tpliYTmxmIg46jetFL8nLWeNlrTlk1RDv84jaYcy/JBE4/45" crossorigin="anonymous"></script>
     <!-- endbuild -->
   </head>
   <body>
@@ -139,6 +139,13 @@
 
       <main class="main-content">
         <section class="stage" id="stage" aria-label="Carte mémoire">
+          <!-- Swipe drop zones for mobile revision mode -->
+          <div class="swipe-zone swipe-zone-ok" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-check-icon lucide-badge-check swipe-zone-icon"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div class="swipe-zone swipe-zone-review" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-x-icon lucide-badge-x swipe-zone-icon"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+          </div>
           <div class="skeleton-card" id="skeleton"></div>
           <div class="card-shell" id="cardShell">
             <div
