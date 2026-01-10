@@ -26,6 +26,25 @@ const FAST_NAV_WINDOW_MS = 450; // Time window to consider clicks as part of the
 
 /* ===== Helpers ===== */
 const qs = (s, el = document) => el.querySelector(s);
+const UMAMI_EVENTS = {
+  cardFlip: "Card flipped",
+  nextButton: "Next button",
+  modeToggle: "Mode toggle",
+  randomToggle: "Random toggle",
+  favouritesToggle: "Favourites toggle",
+  filterGroup: "Filter group",
+};
+
+function trackUmamiEvent(name, data) {
+  if (!name) return;
+  if (window.umami && typeof window.umami.track === "function") {
+    if (data) {
+      window.umami.track(name, data);
+    } else {
+      window.umami.track(name);
+    }
+  }
+}
 
 // Add this to your initialization code
 document.addEventListener("DOMContentLoaded", function () {
@@ -1522,6 +1541,10 @@ function updateCounter() {
 
 function setFlipped(on) {
   state.flipped = on;
+  trackUmamiEvent(UMAMI_EVENTS.cardFlip, {
+    mode: state.revisionMode ? "revision" : "lecture",
+    side: on ? "back" : "front",
+  });
   const card3d = qs("#card3d");
   card3d.classList.add("flipping");
   setTimeout(() => card3d.classList.remove("flipping"), 600);
@@ -2059,6 +2082,10 @@ function cycleTimer() {
   const currentIndex = timerStates.indexOf(state.filterTimer);
   const nextIndex = (currentIndex + 1) % timerStates.length;
   state.filterTimer = timerStates[nextIndex];
+  trackUmamiEvent(UMAMI_EVENTS.filterGroup, {
+    group: "timer",
+    level: state.filterTimer,
+  });
   updateTimerUI();
 
   const keep = getCurrentCard();
@@ -2086,6 +2113,10 @@ function cycleDifficulty() {
   const currentIndex = difficultyStates.indexOf(state.filterDifficulty);
   const nextIndex = (currentIndex + 1) % difficultyStates.length;
   state.filterDifficulty = difficultyStates[nextIndex];
+  trackUmamiEvent(UMAMI_EVENTS.filterGroup, {
+    group: "difficulty",
+    level: state.filterDifficulty,
+  });
   updateDifficultyUI();
 
   const keep = getCurrentCard();
@@ -2126,7 +2157,15 @@ function bindUI() {
     });
   }
 
-  qs("#nextBtn").addEventListener("click", nextCard);
+  const nextBtn = qs("#nextBtn");
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      trackUmamiEvent(UMAMI_EVENTS.nextButton, {
+        mode: state.revisionMode ? "revision" : "lecture",
+      });
+      nextCard();
+    });
+  }
   qs("#prevBtn").addEventListener("click", prevCard);
 
   // Révision mode buttons
@@ -2142,7 +2181,12 @@ function bindUI() {
   // Mode toggle
   const modeToggle = qs("#modeToggle");
   if (modeToggle) {
-    modeToggle.addEventListener("click", toggleRevisionMode);
+    modeToggle.addEventListener("click", () => {
+      toggleRevisionMode();
+      trackUmamiEvent(UMAMI_EVENTS.modeToggle, {
+        mode: state.revisionMode ? "revision" : "lecture",
+      });
+    });
   }
 
   // Révision complete modal buttons
@@ -2185,13 +2229,27 @@ function bindUI() {
   if (randomToggle) {
     randomToggle.addEventListener("click", () => {
       if (randomToggle.classList.contains("disabled")) return;
+      const wasShuffle = state.shuffle;
       toggleShuffle();
+      if (state.shuffle !== wasShuffle) {
+        trackUmamiEvent(UMAMI_EVENTS.randomToggle, {
+          enabled: state.shuffle,
+          mode: state.revisionMode ? "revision" : "lecture",
+        });
+      }
     });
     randomToggle.addEventListener("keydown", (e) => {
       if (randomToggle.classList.contains("disabled")) return;
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        const wasShuffle = state.shuffle;
         toggleShuffle();
+        if (state.shuffle !== wasShuffle) {
+          trackUmamiEvent(UMAMI_EVENTS.randomToggle, {
+            enabled: state.shuffle,
+            mode: state.revisionMode ? "revision" : "lecture",
+          });
+        }
       }
     });
   }
@@ -2199,11 +2257,27 @@ function bindUI() {
   // Favourites toggle
   const favouritesToggle = qs("#favouritesToggle");
   if (favouritesToggle) {
-    favouritesToggle.addEventListener("click", toggleFavouritesOnly);
+    favouritesToggle.addEventListener("click", () => {
+      const wasFavouritesOnly = state.showFavouritesOnly;
+      toggleFavouritesOnly();
+      if (state.showFavouritesOnly !== wasFavouritesOnly) {
+        trackUmamiEvent(UMAMI_EVENTS.favouritesToggle, {
+          enabled: state.showFavouritesOnly,
+          mode: state.revisionMode ? "revision" : "lecture",
+        });
+      }
+    });
     favouritesToggle.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
+        const wasFavouritesOnly = state.showFavouritesOnly;
         toggleFavouritesOnly();
+        if (state.showFavouritesOnly !== wasFavouritesOnly) {
+          trackUmamiEvent(UMAMI_EVENTS.favouritesToggle, {
+            enabled: state.showFavouritesOnly,
+            mode: state.revisionMode ? "revision" : "lecture",
+          });
+        }
       }
     });
   }
