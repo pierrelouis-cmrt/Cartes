@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node scripts/copy-flashcards.js",
     "preview": "vite preview",
     "lint": "eslint src --ext .js",
     "lint:fix": "eslint src --ext .js --fix",
