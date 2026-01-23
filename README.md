@@ -19,8 +19,8 @@ Flashcards CapECL
 
 ## Deployment
 
-- Only the `dist/` folder should be deployed to production.
-- `.htaccess` lives in `public/`, so Vite copies it into `dist/` during the build.
+- Only the `dist/` folder is deployed to production.
+- `.htaccess` lives in `public/`, so Vite copies it into `dist/` during the build (important).
 - GitHub Actions includes a **Deploy Dist** workflow that builds on push to `main` and publishes `dist/` to the `deploy` branch.
 
 ---
