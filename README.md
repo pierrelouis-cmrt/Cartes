@@ -6,12 +6,22 @@ Flashcards CapECL
 
 ---
 
-## Frontend build & caching
+## Development
 
-- `index.html` stays un-cached thanks to the existing meta headers, but the CSS/JS shipped to browsers now use content-hashed filenames under `assets/`. Those files can be served with very aggressive cache headers (e.g. `Cache-Control: public, max-age=31536000, immutable`).
-- Run `npm run build:assets` whenever `styles.css` or `app.js` changes. The script copies the sources to `assets/`, names them with a 12-character hash, updates the auto-managed block inside `index.html`, and refreshes `asset-manifest.json`. Older hashed copies are removed automatically to avoid git conflicts.
-- Run `npm run check:assets` to make sure the committed files match the current sources; this exits non-zero if someone forgot to run the build step.
-- GitHub Actions now includes **Hashed Asset Guard**, which only triggers for commits/pull requests that touch the CSS/JS/build files. It first runs the check; if it fails (meaning the build was skipped locally) the workflow runs the build in CI purely for diagnostics and then fails with guidance instead of rewriting history.
+- `npm run dev` starts the Vite dev server with HMR (default: http://localhost:3000).
+- `npm run build` outputs the production build to `dist/`.
+- `npm run preview` serves the built output locally for a production-like check.
+
+## Code quality
+
+- `npm run lint` runs ESLint on `src/`.
+- `npm run format` and `npm run format:check` run Prettier on `src/`.
+
+## Deployment
+
+- Only the `dist/` folder should be deployed to production.
+- `.htaccess` lives in `public/`, so Vite copies it into `dist/` during the build.
+- GitHub Actions includes a **Deploy Dist** workflow that builds on push to `main` and publishes `dist/` to the `deploy` branch.
 
 ---
 
