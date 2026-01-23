@@ -1,0 +1,71 @@
+name: Deploy Dist
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish dist to deploy branch
+        run: |
+          set -euo pipefail
+
+          if [ ! -d dist ]; then
+            echo "::error::dist folder not found after build."
+            exit 1
+          fi
+
+          DEPLOY_BRANCH=deploy
+          ROOT_DIR=$(pwd)
+          WORKTREE_DIR=$(mktemp -d)
+          STAGE_DIR=$(mktemp -d)
+
+          cp -R dist/. "$STAGE_DIR"/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git show-ref --verify --quiet "refs/remotes/origin/$DEPLOY_BRANCH"; then
+            git worktree add -B "$DEPLOY_BRANCH" "$WORKTREE_DIR" "origin/$DEPLOY_BRANCH"
+          else
+            git worktree add -B "$DEPLOY_BRANCH" "$WORKTREE_DIR"
+          fi
+
+          rm -rf "$WORKTREE_DIR"/*
+          cp -R "$STAGE_DIR"/. "$WORKTREE_DIR"/
+
+          cd "$WORKTREE_DIR"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No deploy changes."
+            exit 0
+          fi
+
+          git commit -m "Deploy dist"
+          git push origin "$DEPLOY_BRANCH"
+
+          cd "$ROOT_DIR"
+          git worktree remove "$WORKTREE_DIR"

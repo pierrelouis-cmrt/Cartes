@@ -25,3 +25,7 @@ env/
 
 # Logs
 *.log
+
+# Node/Vite
+node_modules/
+dist/

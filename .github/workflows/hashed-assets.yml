@@ -1,28 +1,13 @@
-name: Hashed Asset Guard
+name: CI
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'styles.css'
-      - 'app.js'
-      - 'assets/**'
-      - 'asset-manifest.json'
-      - 'scripts/**'
-      - 'package.json'
   pull_request:
-    paths:
-      - 'styles.css'
-      - 'app.js'
-      - 'assets/**'
-      - 'asset-manifest.json'
-      - 'scripts/**'
-      - 'package.json'
 
 jobs:
-  verify:
-    name: Verify hashed assets
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -32,16 +17,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Check cached assets
-        id: check
-        run: npm run check
-        continue-on-error: true
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Run build for diagnostics
-        if: steps.check.outcome == 'failure'
-        run: |
-          npm run build
-          git status --short assets asset-manifest.json index.html || true
-          echo "::error::Hashed assets were updated in CI. Please run 'npm run build' locally and commit the results."
-          exit 1
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

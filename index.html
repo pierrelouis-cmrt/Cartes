@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr" translate="no" class="notranslate">
   <head>
     <meta charset="utf-8" />
@@ -17,9 +17,6 @@
       content="#0e0e10"
       media="(prefers-color-scheme: dark)"
     />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
     <title>Flashcards • CapECL</title>
 
     <!-- Favicons from root -->
@@ -50,15 +47,9 @@
       src="https://cloud.umami.is/script.js"
       data-website-id="a052a820-83ee-48c6-bf8a-9b3c2b3a8fd3"
     ></script>
-    <!-- build:hashed-assets -->
-    <!-- Managed by scripts/build-assets.mjs -->
-    <link rel="preload" as="style" href="assets/styles-4f9b7ad7b58c.css" crossorigin="anonymous" />
-    <link rel="stylesheet" href="assets/styles-4f9b7ad7b58c.css" integrity="sha384-RYicwzntYWkmDzRRSOHYStD8+bpRARtuTECSfDS8IZjiCIGI+andFroWCxWsmpkL" crossorigin="anonymous" />
-    <noscript>
-      <link rel="stylesheet" href="assets/styles-4f9b7ad7b58c.css" integrity="sha384-RYicwzntYWkmDzRRSOHYStD8+bpRARtuTECSfDS8IZjiCIGI+andFroWCxWsmpkL" crossorigin="anonymous" />
-    </noscript>
-    <script defer src="assets/app-53ae79d24c29.js" integrity="sha384-wJ6ymnGpOEDAJEJ4tpliYTmxmIg46jetFL8nLWeNlrTlk1RDv84jaYcy/JBE4/45" crossorigin="anonymous"></script>
-    <!-- endbuild -->
+
+    <!-- Vite entry point -->
+    <script type="module" src="/src/main.js"></script>
   </head>
   <body>
     <div class="app-container">
@@ -141,10 +132,43 @@
         <section class="stage" id="stage" aria-label="Carte mémoire">
           <!-- Swipe drop zones for mobile revision mode -->
           <div class="swipe-zone swipe-zone-ok" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-check-icon lucide-badge-check swipe-zone-icon"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-badge-check-icon lucide-badge-check swipe-zone-icon"
+            >
+              <path
+                d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+              />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
           </div>
           <div class="swipe-zone swipe-zone-review" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-x-icon lucide-badge-x swipe-zone-icon"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-badge-x-icon lucide-badge-x swipe-zone-icon"
+            >
+              <path
+                d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"
+              />
+              <line x1="15" x2="9" y1="9" y2="15" />
+              <line x1="9" x2="15" y1="9" y2="15" />
+            </svg>
           </div>
           <div class="skeleton-card" id="skeleton"></div>
           <div class="card-shell" id="cardShell">
