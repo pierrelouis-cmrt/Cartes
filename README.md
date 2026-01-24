@@ -49,6 +49,7 @@ Recommended path (verify locally before pushing):
 - Only the `dist/` folder is deployed to production.
 - `.htaccess` lives in `public/`, so Vite copies it into `dist/` during the build (important).
 - GitHub Actions includes a **Deploy Dist** workflow that builds on push to `main` and publishes `dist/` to the `deploy` branch.
+- Hosting is linked to the `deploy` branch via webhook, so updates go live automatically.
 
 ---
 
