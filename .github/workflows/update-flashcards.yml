@@ -18,6 +18,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.CARTES_PAT }}
+
+      - name: Ensure PAT is configured
+        run: |
+          if [ -z "${{ secrets.CARTES_PAT }}" ]; then
+            echo "::error::Missing CARTES_PAT secret (required to trigger downstream workflows)."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5

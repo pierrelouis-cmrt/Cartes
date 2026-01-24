@@ -6,11 +6,38 @@ Flashcards CapECL
 
 ---
 
+## Setup
+
+To run the site locally after cloning:
+
+1. Install Node.js 20+.
+2. Install dependencies:
+   - `npm ci`
+
+If you plan to regenerate flashcards locally, install Python 3.11+ and the script dependencies:
+- `pip install pymupdf pillow numpy`
+
 ## Development
 
 - `npm run dev` starts the Vite dev server with HMR (default: http://localhost:3000).
 - `npm run build` outputs the production build to `dist/`.
 - `npm run preview` serves the built output locally for a production-like check.
+
+## Updating flashcards
+
+Quick path (just push the PDF, GitHub Actions regenerates + deploys):
+
+1. Drop the updated PDF into `flashcards/`.
+2. Commit and push to `main`.
+
+Recommended path (verify locally before pushing):
+
+1. Drop the updated PDF into `flashcards/`.
+2. Run the generator from the repo root and pick the PDF:
+   - `python cartes.py`
+3. Review the generated assets in `flashcards/<pdf-name>/` (images + `manifest.json`) and commit.
+4. Run `npm run build` then `npm run preview` to verify the site locally.
+5. Push to `main`.
 
 ## Code quality
 
