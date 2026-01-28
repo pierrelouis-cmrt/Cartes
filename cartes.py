@@ -27,6 +27,7 @@ import os
 import sys
 import json
 import colorsys
+import re
 from datetime import datetime, timezone
 from typing import Tuple, Optional, Dict, Any, List
 
@@ -529,42 +530,120 @@ def classify_timer_color(rgb: Optional[Tuple[int, int, int]]) -> ColorName:
     return _classify_hsv(h, s, v, TIMER_CANDIDATES)
 
 
-def ask_user_to_choose_pdf(search_dir: str) -> List[str]:
-    try:
-        entries = os.listdir(search_dir)
-    except Exception as e:
-        fail(f"Impossible de lister le répertoire '{search_dir}': {e}")
+CHAPTER_RE = re.compile(
+    r"(?:^|[^a-z0-9])(?:chap(?:ter)?|chapitre|ch)\s*[-_]*\s*(\d+)",
+    re.IGNORECASE,
+)
+FALLBACK_NUM_RE = re.compile(r"(\d+)")
 
-    pdfs = sorted([f for f in entries if f.lower().endswith(".pdf")])
-    if not pdfs:
-        fail(f"Aucun fichier .pdf trouvé dans : {os.path.abspath(search_dir)}")
 
-    print("\nPDFs disponibles :")
-    print("  [0] Tous les PDFs")
-    for i, name in enumerate(pdfs, 1):
+def _extract_chapter_number(filename: str) -> Optional[int]:
+    stem = os.path.splitext(os.path.basename(filename))[0]
+    match = CHAPTER_RE.search(stem)
+    if match:
+        return int(match.group(1))
+    match = FALLBACK_NUM_RE.search(stem)
+    if match:
+        return int(match.group(1))
+    return None
+
+
+def _choose_from_duplicates(label: str, names: List[str]) -> str:
+    print(f"\nPlusieurs PDFs pour {label} :")
+    for i, name in enumerate(names, 1):
         print(f"  [{i}] {name}")
-
     while True:
-        choice = input("\nEntrez le numéro du PDF ([0] pour tous, 'q' pour quitter) : ").strip()
+        choice = input("Choisissez un numéro dans la liste : ").strip()
         if choice.lower() in {"q", "quit", "exit"}:
             fail("Annulé par l'utilisateur.", code=0)
         if not choice.isdigit():
             print("Veuillez entrer un numéro valide.")
             continue
         idx = int(choice)
-        if idx == 0:
-            print("Sélection : tous les PDFs.")
-            return [
-                os.path.abspath(os.path.join(search_dir, name))
-                for name in pdfs
-            ]
-        if 1 <= idx <= len(pdfs):
-            selected = pdfs[idx - 1]
+        if 1 <= idx <= len(names):
+            return names[idx - 1]
+        print(f"Veuillez entrer un nombre entre 1 et {len(names)}.")
+
+
+def ask_user_to_choose_pdf(search_dir: str) -> List[str]:
+    try:
+        entries = os.listdir(search_dir)
+    except Exception as e:
+        fail(f"Impossible de lister le répertoire '{search_dir}': {e}")
+
+    pdfs = [f for f in entries if f.lower().endswith(".pdf")]
+    if not pdfs:
+        fail(f"Aucun fichier .pdf trouvé dans : {os.path.abspath(search_dir)}")
+
+    chapter_map: Dict[int, List[str]] = {}
+    no_chapter: List[str] = []
+    for name in pdfs:
+        chapter = _extract_chapter_number(name)
+        if chapter is None:
+            no_chapter.append(name)
+        else:
+            chapter_map.setdefault(chapter, []).append(name)
+
+    for names in chapter_map.values():
+        names.sort(key=lambda n: n.lower())
+    no_chapter.sort(key=lambda n: n.lower())
+    chapters_sorted = sorted(chapter_map.keys())
+    ordered_pdfs: List[str] = []
+    for chapter in chapters_sorted:
+        ordered_pdfs.extend(chapter_map[chapter])
+    ordered_pdfs.extend(no_chapter)
+
+    print("\nPDFs disponibles :")
+    print("  [0] Tous les PDFs")
+    for chapter in chapters_sorted:
+        names = chapter_map[chapter]
+        if len(names) == 1:
+            print(f"  [{chapter}] {names[0]}")
+        else:
+            print(f"  [{chapter}] {len(names)} fichiers")
+            for i, name in enumerate(names, 1):
+                print(f"       ({i}) {name}")
+    if no_chapter:
+        print("  [?] PDFs sans numéro de chapitre :")
+        for i, name in enumerate(no_chapter, 1):
+            print(f"       ({i}) {name}")
+
+    while True:
+        choice = input(
+            "\nEntrez le numéro du chapitre ([0] pour tous, '?' pour sans chapitre, 'q' pour quitter) : "
+        ).strip()
+        if choice.lower() in {"q", "quit", "exit"}:
+            fail("Annulé par l'utilisateur.", code=0)
+        if choice == "?" and no_chapter:
+            selected = (
+                _choose_from_duplicates("les PDFs sans numéro de chapitre", no_chapter)
+                if len(no_chapter) > 1
+                else no_chapter[0]
+            )
             in_path = os.path.abspath(os.path.join(search_dir, selected))
             print(f"Sélectionné : {selected}")
             return [in_path]
-        else:
-            print(f"Veuillez entrer un nombre entre 0 et {len(pdfs)}.")
+        if choice.isdigit():
+            idx = int(choice)
+            if idx == 0:
+                print("Sélection : tous les PDFs.")
+                return [
+                    os.path.abspath(os.path.join(search_dir, name))
+                    for name in ordered_pdfs
+                ]
+            if idx in chapter_map:
+                names = chapter_map[idx]
+                selected = (
+                    names[0]
+                    if len(names) == 1
+                    else _choose_from_duplicates(f"le chapitre {idx}", names)
+                )
+                in_path = os.path.abspath(os.path.join(search_dir, selected))
+                print(f"Sélectionné : {selected}")
+                return [in_path]
+            print(f"Veuillez entrer un chapitre existant ou 0.")
+            continue
+        print("Veuillez entrer un chapitre valide, 0 ou '?'.")
 
 
 def process_pdf(in_path: str, args: argparse.Namespace) -> None:
