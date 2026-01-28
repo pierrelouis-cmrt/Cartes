@@ -1,0 +1,190 @@
+{
+  "chapter": "ch10_cartes",
+  "asset_version": "20260128T124354Z",
+  "image_format": "webp",
+  "total_cards": 12,
+  "cards_by_border": {
+    "green": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      9,
+      11,
+      12
+    ],
+    "orange": [
+      7,
+      8
+    ],
+    "red": [
+      1,
+      10
+    ]
+  },
+  "cards_by_timer": {
+    "green": [
+      2,
+      4,
+      5,
+      8,
+      9,
+      11,
+      12
+    ],
+    "yellow": [
+      1,
+      3,
+      6,
+      7,
+      10
+    ]
+  },
+  "per_card": {
+    "1": {
+      "border": "red",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "2": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "3": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "4": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "5": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "6": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "7": {
+      "border": "orange",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "8": {
+      "border": "orange",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "9": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "10": {
+      "border": "red",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "11": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "12": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    }
+  }
+}
