@@ -21,9 +21,10 @@ jobs:
           token: ${{ secrets.CARTES_PAT || github.token }}
 
       - name: Warn if PAT is missing
-        if: ${{ !secrets.CARTES_PAT }}
         run: |
-          echo "::warning::Missing CARTES_PAT secret. Pushes will use GITHUB_TOKEN and will not trigger other workflows."
+          if [ -z "${{ secrets.CARTES_PAT }}" ]; then
+            echo "::warning::Missing CARTES_PAT secret. Pushes will use GITHUB_TOKEN and will not trigger other workflows."
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
