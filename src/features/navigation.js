@@ -10,7 +10,6 @@ import {
   showCurrent,
   updateNavButtons,
   updateShuffleUI,
-  updateCounter,
   updateFavouritesUI,
 } from '../ui/updates.js';
 
@@ -305,11 +304,12 @@ export function toggleShuffle() {
   if (state.showFavouritesOnly && !state.shuffle) {
     return;
   }
+  const currentCardBeforeToggle = getCurrentCard();
   state.shuffle = !state.shuffle;
   localStorage.setItem('fc_shuffle', JSON.stringify(state.shuffle));
 
   if (state.shuffle) {
-    const currentCard = getCurrentCard();
+    const currentCard = currentCardBeforeToggle;
     const savedHistory = loadHistory();
     if (savedHistory.length > 0 && savedHistory[savedHistory.length - 1] === currentCard) {
       state.history = savedHistory;
@@ -326,7 +326,7 @@ export function toggleShuffle() {
     saveHistory();
   } else {
     clearHistory();
-    const currentCard = getCurrentCard();
+    const currentCard = currentCardBeforeToggle;
     if (currentCard) {
       state.currentIndex = state.deck.indexOf(currentCard);
       if (state.currentIndex === -1) state.currentIndex = 0;
@@ -336,8 +336,7 @@ export function toggleShuffle() {
 
   ensureShuffleQueue(getCurrentCard());
   updateShuffleUI();
-  updateCounter();
-  updateNavButtons();
+  showCurrent();
 }
 
 export async function toggleFavouritesOnly() {
