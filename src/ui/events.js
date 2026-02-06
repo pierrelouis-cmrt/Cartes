@@ -411,7 +411,36 @@ export function initTouchDetection() {
   try {
     const isTouch =
       'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-    if (isTouch) document.documentElement.classList.add('is-touch');
+    if (!isTouch) return;
+
+    document.documentElement.classList.add('is-touch');
+
+    if (document.documentElement.dataset.touchCleanupBound === 'true') return;
+    document.documentElement.dataset.touchCleanupBound = 'true';
+
+    const clearTouchFocusedControl = () => {
+      const activeElement = document.activeElement;
+      if (!(activeElement instanceof HTMLElement)) return;
+      if (!activeElement.matches('button, [role="button"]')) return;
+      activeElement.blur();
+    };
+
+    document.addEventListener(
+      'pointerup',
+      (event) => {
+        if (event.pointerType !== 'touch') return;
+        requestAnimationFrame(clearTouchFocusedControl);
+      },
+      true
+    );
+
+    document.addEventListener(
+      'touchend',
+      () => {
+        requestAnimationFrame(clearTouchFocusedControl);
+      },
+      { passive: true, capture: true }
+    );
   } catch {
     // Ignore touch detection errors
   }

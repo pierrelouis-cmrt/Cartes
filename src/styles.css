@@ -263,15 +263,17 @@ h1 {
   position: relative;
 }
 
-.info-btn:hover {
-  color: var(--color-woodsmoke);
-  background: rgba(14, 14, 16, 0.04);
-  transform: scale(1.05);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (hover: hover) and (pointer: fine) {
   .info-btn:hover {
-    background: rgba(240, 240, 240, 0.04);
+    color: var(--color-woodsmoke);
+    background: rgba(14, 14, 16, 0.04);
+    transform: scale(1.05);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .info-btn:hover {
+      background: rgba(240, 240, 240, 0.04);
+    }
   }
 }
 
@@ -394,10 +396,12 @@ h1 {
   border-color: var(--color-grey-border);
 }
 
-.chapter-select:hover,
-.chapter-select:focus:hover {
-  border-color: var(--color-grey-contrast);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .chapter-select:hover,
+  .chapter-select:focus:hover {
+    border-color: var(--color-grey-contrast);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .chapter-select:focus-visible {
@@ -479,8 +483,10 @@ h1 {
   transform: translateZ(0);
 }
 
-.card-shell:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .card-shell:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .card-shell:active {
@@ -738,13 +744,15 @@ h1 {
   --bordered-shadow-focus: none;
 }
 
-.btn:hover:not(:disabled),
-.random-toggle:hover:not(.disabled),
-.favourites-toggle:hover:not(.disabled) {
-  color: var(--bordered-hover-color);
-  border-color: var(--bordered-hover-border);
-  background: var(--bordered-hover-bg);
-  box-shadow: none;
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled),
+  .random-toggle:hover:not(.disabled),
+  .favourites-toggle:hover:not(.disabled) {
+    color: var(--bordered-hover-color);
+    border-color: var(--bordered-hover-border);
+    background: var(--bordered-hover-bg);
+    box-shadow: none;
+  }
 }
 
 .btn:active:not(:disabled) {
@@ -846,20 +854,10 @@ h1 {
   touch-action: manipulation;
 }
 
-.mode-toggle:hover {
-  background: rgba(14, 14, 16, 0.06);
-  border-color: var(--color-grey-mid);
-}
-
 .mode-toggle.active {
   background: var(--color-accent);
   color: var(--color-white);
   border-color: var(--color-accent);
-}
-
-.mode-toggle.active:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
 }
 
 .mode-toggle .toggle-icon {
@@ -872,7 +870,19 @@ h1 {
   transform: rotate(90deg);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (hover: hover) and (pointer: fine) {
+  .mode-toggle:hover {
+    background: rgba(14, 14, 16, 0.06);
+    border-color: var(--color-grey-mid);
+  }
+
+  .mode-toggle.active:hover {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-color-scheme: dark) {
   .mode-toggle:hover {
     background: rgba(240, 240, 240, 0.08);
   }
@@ -897,16 +907,18 @@ h1 {
   border-color: var(--green);
 }
 
-.btn-ok:hover:not(:disabled) {
-  background: #16a34a;
-  border-color: #16a34a;
-  color: var(--color-white);
-}
+@media (hover: hover) and (pointer: fine) {
+  .btn-ok:hover:not(:disabled) {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: var(--color-white);
+  }
 
-.btn-pas-ok:hover:not(:disabled) {
-  background: var(--bordered-hover-bg);
-  border-color: var(--bordered-hover-border);
-  color: var(--bordered-hover-color);
+  .btn-pas-ok:hover:not(:disabled) {
+    background: var(--bordered-hover-bg);
+    border-color: var(--bordered-hover-border);
+    color: var(--bordered-hover-color);
+  }
 }
 
 body.modal-open {
@@ -1120,12 +1132,6 @@ body.modal-open .footer-section {
   font-weight: 600;
 }
 
-.modal-btn-primary:hover {
-  background: #3a3a3a;
-  color: var(--color-white);
-  border-color: #3a3a3a;
-}
-
 .modal-btn-primary:active {
   background: var(--color-woodsmoke);
   color: var(--color-white);
@@ -1135,12 +1141,6 @@ body.modal-open .footer-section {
   background: var(--color-woodsmoke);
   color: var(--color-white);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.modal-welcome .modal-btn:hover {
-  background: var(--color-grey-contrast);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .modal-welcome .modal-btn:active {
@@ -1153,10 +1153,24 @@ body.modal-open .footer-section {
   border: 1px solid var(--color-grey-border);
 }
 
-.modal-btn-ghost:hover {
-  background: rgba(14, 14, 16, 0.04);
-  border-color: var(--color-grey-mid);
-  color: var(--color-grey-contrast);
+@media (hover: hover) and (pointer: fine) {
+  .modal-btn-primary:hover {
+    background: #3a3a3a;
+    color: var(--color-white);
+    border-color: #3a3a3a;
+  }
+
+  .modal-welcome .modal-btn:hover {
+    background: var(--color-grey-contrast);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .modal-btn-ghost:hover {
+    background: rgba(14, 14, 16, 0.04);
+    border-color: var(--color-grey-mid);
+    color: var(--color-grey-contrast);
+  }
 }
 
 .modal-actions {
@@ -1197,25 +1211,27 @@ body.modal-open .footer-section {
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
-  .modal-welcome .modal-btn:hover {
-    background: linear-gradient(135deg, #303037, #222227);
-    border-color: rgba(255, 255, 255, 0.18);
-  }
-
-  .modal-btn-primary:hover {
-    background: #cfcfcf;
-    color: var(--color-white);
-    border-color: #cfcfcf;
-  }
-
   .modal-btn-ghost {
     color: var(--color-grey-mid);
     border-color: var(--color-grey-border);
   }
 
-  .modal-btn-ghost:hover {
-    background: rgba(240, 240, 240, 0.08);
-    border-color: var(--color-grey-mid);
+  @media (hover: hover) and (pointer: fine) {
+    .modal-welcome .modal-btn:hover {
+      background: linear-gradient(135deg, #303037, #222227);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .modal-btn-primary:hover {
+      background: #cfcfcf;
+      color: var(--color-white);
+      border-color: #cfcfcf;
+    }
+
+    .modal-btn-ghost:hover {
+      background: rgba(240, 240, 240, 0.08);
+      border-color: var(--color-grey-mid);
+    }
   }
 }
 
@@ -1292,13 +1308,15 @@ body.modal-open .footer-section {
   touch-action: manipulation;
 }
 
-.filter-group:hover .traffic-pills {
-  background: rgba(14, 14, 16, 0.04);
-}
-
-@media (prefers-color-scheme: dark) {
+@media (hover: hover) and (pointer: fine) {
   .filter-group:hover .traffic-pills {
-    background: rgba(240, 240, 240, 0.04);
+    background: rgba(14, 14, 16, 0.04);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .filter-group:hover .traffic-pills {
+      background: rgba(240, 240, 240, 0.04);
+    }
   }
 }
 
@@ -1396,9 +1414,11 @@ body.modal-open .footer-section {
   --bordered-shadow-focus: none;
 }
 
-.random-toggle.disabled:hover {
-  border-color: var(--color-grey-border);
-  background: var(--color-card-bg);
+@media (hover: hover) and (pointer: fine) {
+  .random-toggle.disabled:hover {
+    border-color: var(--color-grey-border);
+    background: var(--color-card-bg);
+  }
 }
 
 .random-toggle.active {
@@ -1510,12 +1530,6 @@ body.modal-open .footer-section {
   -webkit-tap-highlight-color: transparent;
 }
 
-.btn-restart:hover {
-  background: rgba(14, 14, 16, 0.04);
-  border-color: var(--color-grey-mid);
-  color: var(--color-grey-contrast);
-}
-
 .btn-restart:active {
   transform: scale(0.95);
 }
@@ -1532,9 +1546,17 @@ body.modal-open .footer-section {
   line-height: 1;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (hover: hover) and (pointer: fine) {
   .btn-restart:hover {
-    background: rgba(240, 240, 240, 0.08);
+    background: rgba(14, 14, 16, 0.04);
+    border-color: var(--color-grey-mid);
+    color: var(--color-grey-contrast);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .btn-restart:hover {
+      background: rgba(240, 240, 240, 0.08);
+    }
   }
 }
 
@@ -1553,9 +1575,11 @@ body.modal-open .footer-section {
   -webkit-tap-highlight-color: transparent;
 }
 
-.btn-text-link:hover {
-  color: var(--color-grey-contrast);
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .btn-text-link:hover {
+    color: var(--color-grey-contrast);
+    text-decoration: underline;
+  }
 }
 
 /* Redesigned minimal footer */
@@ -1595,8 +1619,10 @@ body.modal-open .footer-section {
   font-weight: 500;
 }
 
-.footer-credits a:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .footer-credits a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Simple text home link on the left */
@@ -1612,9 +1638,11 @@ body.modal-open .footer-section {
   order: -1;
 }
 
-.footer-home:hover {
-  color: var(--color-woodsmoke);
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .footer-home:hover {
+    color: var(--color-woodsmoke);
+    text-decoration: underline;
+  }
 }
 
 .footer-home svg {
@@ -1883,6 +1911,28 @@ body.modal-open .footer-section {
 /* Prevent hover effects during swipe */
 .card-shell.swiping:hover {
   transform: none;
+}
+
+/* Touch polish: prevent pressed states from sticking on mobile taps */
+@media (hover: none), (pointer: coarse) {
+  .info-btn:active,
+  .card-shell:active,
+  .modal-btn-primary:active,
+  .modal-welcome .modal-btn:active,
+  .btn-restart:active {
+    transform: none;
+  }
+
+  .btn:active:not(:disabled),
+  .random-toggle:active:not(.disabled),
+  .favourites-toggle:active:not(.disabled),
+  .info-btn:active,
+  .card-shell:active,
+  .modal-btn-primary:active,
+  .modal-welcome .modal-btn:active,
+  .btn-restart:active {
+    box-shadow: none;
+  }
 }
 
 /* Dark mode adjustments for drop zones */
