@@ -125,8 +125,15 @@ jobs:
           echo "pushed=true" >> "$GITHUB_OUTPUT"
 
       - name: Trigger deploy workflow when PAT is missing
-        if: steps.detect.outputs.any == 'true' && steps.commit_push.outputs.pushed == 'true' && secrets.CARTES_PAT == ''
+        if: steps.detect.outputs.any == 'true' && steps.commit_push.outputs.pushed == 'true'
+        env:
+          CARTES_PAT: ${{ secrets.CARTES_PAT }}
         run: |
+          if [ -n "$CARTES_PAT" ]; then
+            echo "CARTES_PAT is set; skipping manual deploy dispatch."
+            exit 0
+          fi
+
           curl -sS -X POST \
             -H "Authorization: Bearer ${{ github.token }}" \
             -H "Accept: application/vnd.github+json" \
