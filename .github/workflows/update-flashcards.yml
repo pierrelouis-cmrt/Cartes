@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   regenerate:
@@ -40,15 +41,18 @@ jobs:
         id: detect
         run: |
           set -euo pipefail
-          files=$(jq -r '
-            [
-              .commits[]? | (.added[]?, .modified[]?)
-            ]
-            | flatten
-            | unique
-            | map(select(test("^flashcards/.*\\.pdf$")))
-            | .[]?
-          ' "$GITHUB_EVENT_PATH")
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            before="$(git rev-list --max-parents=0 HEAD)"
+          fi
+
+          files=$(
+            git diff --name-only "$before" "$after" -- ":(glob)flashcards/**/*.pdf" \
+              | sed '/^$/d' \
+              | sort -u
+          )
 
           if [ -z "${files}" ]; then
             echo "any=false" >> "$GITHUB_OUTPUT"
@@ -84,32 +88,47 @@ jobs:
                   continue
 
               search_dir = pdf_path.parent
-              pdfs = sorted([p.name for p in search_dir.iterdir() if p.suffix.lower() == ".pdf"])
-              try:
-                  index = pdfs.index(pdf_path.name) + 1
-              except ValueError:
-                  print(f"::error::Cannot determine selection index for {pdf_path}", file=sys.stderr)
-                  sys.exit(1)
-
-              print(f"Processing {pdf_path} (selection {index})")
+              print(f"Processing {pdf_path}")
               subprocess.run(
-                  [sys.executable, "cartes.py", "--search-dir", str(search_dir)],
-                  input=f"{index}\n",
-                  text=True,
+                  [
+                      sys.executable,
+                      "cartes.py",
+                      "--search-dir",
+                      str(search_dir),
+                      "--pdf",
+                      pdf_path.name,
+                  ],
                   check=True,
               )
           PY
 
       - name: Commit and push updates
+        id: commit_push
         if: steps.detect.outputs.any == 'true'
         run: |
-          if git diff --quiet; then
+          git add flashcards
+          if git diff --cached --quiet; then
             echo "No changes produced by cartes.py"
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add flashcards
           git commit -m "Update flashcards assets"
-          git push
+
+          if [ -n "${{ secrets.CARTES_PAT }}" ]; then
+            git remote set-url origin "https://x-access-token:${{ secrets.CARTES_PAT }}@github.com/${{ github.repository }}.git"
+          fi
+
+          git push origin "HEAD:${{ github.ref_name }}"
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger deploy workflow when PAT is missing
+        if: steps.detect.outputs.any == 'true' && steps.commit_push.outputs.pushed == 'true' && secrets.CARTES_PAT == ''
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/deploy-dist.yml/dispatches" \
+            -d '{"ref":"main"}'

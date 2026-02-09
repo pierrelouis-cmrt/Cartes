@@ -841,6 +841,11 @@ def main():
         default=default_search,
         help="Répertoire où chercher les PDFs (défaut: dossier 'flashcards' à côté du script).",
     )
+    parser.add_argument(
+        "--pdf",
+        default=None,
+        help="Nom ou chemin d'un PDF à traiter directement (sans sélection interactive).",
+    )
     parser.add_argument("--dpi", type=int, default=300, help="DPI de rendu (défaut 300).")
     parser.add_argument("--white-threshold", type=int, default=220, help="Seuil 0–255 pour 'blanc' (défaut 220).")
     parser.add_argument("--band-frac", type=float, default=0.10, help="Épaisseur de bande centrale (trim) 0–0.5.")
@@ -894,7 +899,17 @@ def main():
             print("Attention: --webp-lossless ignoré car le format de sortie est PNG.")
             args.webp_lossless = False
 
-    selected_paths = ask_user_to_choose_pdf(args.search_dir)
+    if args.pdf:
+        selected = args.pdf
+        candidate = selected if os.path.isabs(selected) else os.path.join(args.search_dir, selected)
+        candidate = os.path.abspath(candidate)
+        if not candidate.lower().endswith(".pdf"):
+            fail(f"L'argument --pdf doit pointer vers un fichier .pdf : {args.pdf}")
+        if not os.path.isfile(candidate):
+            fail(f"PDF introuvable : {candidate}")
+        selected_paths = [candidate]
+    else:
+        selected_paths = ask_user_to_choose_pdf(args.search_dir)
 
     if len(selected_paths) > 1:
         for idx, in_path in enumerate(selected_paths, start=1):
