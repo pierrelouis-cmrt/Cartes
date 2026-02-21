@@ -1,0 +1,248 @@
+{
+  "chapter": "ch12_cartes",
+  "asset_version": "20260221T205900Z",
+  "image_format": "webp",
+  "total_cards": 16,
+  "cards_by_border": {
+    "green": [
+      2,
+      3,
+      5,
+      6,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14
+    ],
+    "orange": [
+      1,
+      4,
+      7,
+      11
+    ],
+    "purple": [
+      15,
+      16
+    ]
+  },
+  "cards_by_timer": {
+    "green": [
+      2,
+      3,
+      5,
+      7,
+      8,
+      11,
+      12,
+      13,
+      14
+    ],
+    "yellow": [
+      1,
+      4,
+      6,
+      9,
+      10
+    ],
+    "none": [
+      15,
+      16
+    ]
+  },
+  "per_card": {
+    "1": {
+      "border": "orange",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "2": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "3": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "4": {
+      "border": "orange",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "5": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "6": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "7": {
+      "border": "orange",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "8": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "9": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "10": {
+      "border": "green",
+      "timer": "yellow",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "11": {
+      "border": "orange",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "12": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "13": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 813
+      },
+      "back": {
+        "width": 1177,
+        "height": 813
+      }
+    },
+    "14": {
+      "border": "green",
+      "timer": "green",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "15": {
+      "border": "purple",
+      "timer": "none",
+      "front": {
+        "width": 1177,
+        "height": 814
+      },
+      "back": {
+        "width": 1177,
+        "height": 814
+      }
+    },
+    "16": {
+      "border": "purple",
+      "timer": "none",
+      "front": {
+        "width": 1177,
+        "height": 815
+      },
+      "back": {
+        "width": 1177,
+        "height": 815
+      }
+    }
+  }
+}
