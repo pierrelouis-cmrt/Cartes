@@ -4,6 +4,11 @@
 
 Flashcards CapECL
 
+> **Development has moved / Développement déplacé :** active development is now
+> done on the fork [BBPhysique/Cartes](https://github.com/BBPhysique/Cartes).
+> This repository keeps the previous app content as `old-index.html`, and
+> the root `index.html` redirects to <https://bbphysique.github.io/Cartes/>.
+
 ---
 
 ## Setup
@@ -20,6 +25,7 @@ If you plan to regenerate flashcards locally, install Python 3.11+ and the scrip
 ## Development
 
 - `npm run dev` starts the Vite dev server with HMR (default: http://localhost:3000).
+  The root page redirects; open `http://localhost:3000/old-index.html` to view the preserved previous app locally.
 - `npm run build` outputs the production build to `dist/`.
 - `npm run preview` serves the built output locally for a production-like check.
 
@@ -46,6 +52,8 @@ Recommended path (verify locally before pushing):
 
 ## Deployment
 
+- The root `index.html` is intentionally a redirect page to <https://bbphysique.github.io/Cartes/>.
+- The previous app index is preserved as `old-index.html` and is still included in the Vite build.
 - Only the `dist/` folder is deployed to production.
 - `.htaccess` lives in `public/`, so Vite copies it into `dist/` during the build (important).
 - GitHub Actions includes a **Deploy Dist** workflow that builds on push to `main` and publishes `dist/` to the `deploy` branch.
