@@ -1,6 +1,6 @@
 {
   "chapter": "ch8_cartes",
-  "asset_version": "20260403T181302Z",
+  "asset_version": "20260827T132750Z",
   "image_format": "webp",
   "total_cards": 16,
   "cards_by_border": {
@@ -91,11 +91,11 @@
       "timer": "yellow",
       "front": {
         "width": 1177,
-        "height": 815
+        "height": 814
       },
       "back": {
         "width": 1177,
-        "height": 815
+        "height": 814
       }
     },
     "5": {
@@ -139,11 +139,11 @@
       "timer": "yellow",
       "front": {
         "width": 1177,
-        "height": 815
+        "height": 814
       },
       "back": {
         "width": 1177,
-        "height": 815
+        "height": 814
       }
     },
     "9": {

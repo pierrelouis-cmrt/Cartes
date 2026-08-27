@@ -1,6 +1,6 @@
 {
   "chapter": "ch9_cartes",
-  "asset_version": "20260403T181341Z",
+  "asset_version": "20260827T132755Z",
   "image_format": "webp",
   "total_cards": 24,
   "cards_by_border": {
@@ -159,11 +159,11 @@
       "timer": "yellow",
       "front": {
         "width": 1177,
-        "height": 815
+        "height": 814
       },
       "back": {
         "width": 1177,
-        "height": 815
+        "height": 814
       }
     },
     "9": {

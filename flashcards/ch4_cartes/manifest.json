@@ -1,6 +1,6 @@
 {
   "chapter": "ch4_cartes",
-  "asset_version": "20260403T181058Z",
+  "asset_version": "20260827T132734Z",
   "image_format": "webp",
   "total_cards": 12,
   "cards_by_border": {
@@ -181,11 +181,11 @@
       "timer": "orange",
       "front": {
         "width": 1177,
-        "height": 815
+        "height": 814
       },
       "back": {
         "width": 1177,
-        "height": 815
+        "height": 814
       }
     }
   }
