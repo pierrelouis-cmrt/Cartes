@@ -1,5 +1,8 @@
 # Cartes
 
+> **Développement déplacé / Development moved:** le développement actif se poursuit
+> désormais sur le fork [BBPhysique/Cartes](https://github.com/BBPhysique/Cartes).
+
 Site accessible [ici](https://bbphysique.github.io/Cartes/).
 
 ## Installation
